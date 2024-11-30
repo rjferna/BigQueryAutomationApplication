@@ -1,0 +1,14 @@
+2024-11-27 16:04:30,359 - logger.py[line:28], set_logger[INFO]: Set logger level to info
+2024-11-27 16:04:30,359 - controller.py[line:43], main[INFO]: Querying GCP for Data Ingestion Details: (COINCAP_BITCOIN_HISTORY, EXTERNAL_COINCAP_BITCOIN_HISTORY)
+2024-11-27 16:26:39,438 - logger.py[line:28], set_logger[INFO]: Set logger level to info
+2024-11-27 16:26:39,439 - controller.py[line:43], main[INFO]: Querying GCP for Data Ingestion Details: (COINCAP_BITCOIN_HISTORY, EXTERNAL_COINCAP_BITCOIN_HISTORY)
+2024-11-27 16:26:40,399 - controller.py[line:72], main[INFO]: Querying GCP for Worflow Action History Process ID.
+2024-11-27 16:26:41,273 - controller.py[line:74], main[INFO]: Output: (100006).
+2024-11-27 16:26:41,274 - controller.py[line:77], main[INFO]: Obtaining Connection Credentials
+2024-11-27 16:26:41,274 - controller.py[line:91], main[INFO]: Writing Workflow Action History Audit Record
+2024-11-27 16:26:43,557 - controller.py[line:93], main[INFO]: Workflow Action Result: SUCCESS
+2024-11-27 16:26:43,557 - controller.py[line:95], main[INFO]: Get last incremental loadtime
+2024-11-27 16:26:44,176 - controller.py[line:97], main[INFO]: Data collection start datetime: 2024-11-22T16:26:44Z
+2024-11-27 16:26:45,022 - controller.py[line:117], main[INFO]: Updating Workflow Action Record: SUCCESS
+2024-11-27 16:26:45,022 - controller.py[line:119], main[INFO]: Data Collection Complete.
+Execution Complete.

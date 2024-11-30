@@ -1,0 +1,10 @@
+2024-11-27 16:57:08,179 - logger.py[line:28], set_logger[INFO]: Set logger level to info
+2024-11-27 16:57:08,179 - controller.py[line:43], main[INFO]: Querying GCP for Data Ingestion Details: (COINCAP_MARKETS, EXTERNAL_COINCAP_MARKETS)
+2024-11-27 16:57:09,400 - controller.py[line:72], main[INFO]: Get Process_ID From GCP Worflow Action History.
+2024-11-27 16:57:07,831 - controller.py[line:74], main[INFO]: Output: (100007).
+2024-11-27 16:57:07,832 - controller.py[line:77], main[INFO]: Obtaining Connection Credentials
+2024-11-27 16:57:07,832 - controller.py[line:82], main[INFO]: Set Workflow Action History Execution Record
+2024-11-27 16:57:10,052 - controller.py[line:84], main[INFO]: Workflow Action Result: SUCCESS
+2024-11-27 16:57:13,377 - controller.py[line:117], main[INFO]: Updating Workflow Action Record: SUCCESS
+2024-11-27 16:57:13,377 - controller.py[line:119], main[INFO]: Data Ingestion Complete.
+Execution END.
