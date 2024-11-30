@@ -2,7 +2,7 @@ from google.cloud import storage, bigquery
 from google.oauth2 import service_account
 from datetime import datetime, timedelta
 
-def list_files_in_bucket(bucket_name, keyfile_path):
+def list_files_in_bucket(bucket_name, bucket_destination,keyfile_path):
     # Initialize a client with the service account keyfile
     storage_client = storage.Client.from_service_account_json(keyfile_path)
     
@@ -23,7 +23,7 @@ def list_files_in_bucket(bucket_name, keyfile_path):
     for val in range(0, len(bucket_items)):
         if  len(bucket_items[val]) >= 21:
             #files.append(bucket_items[val].split('input/nhl-game-data/')[1].split('.')[0]) # Removes bucket path and file type extension
-            files.append(bucket_items[val].split('input/nhl-game-data/')[1])
+            files.append(bucket_items[val].split(bucket_destination)[1])
 
     return files
 
@@ -42,13 +42,10 @@ def upload_to_bucket(bucket_name, source_file_name, destination_blob_name, keyfi
 
 def query_dataset(query, keyfile_path):
     try: 
-        # Path to your service account keyfile
         keyfile = keyfile_path
 
-        # Create credentials using the service account keyfile
+        # Create credentials & Initialize client
         credentials = service_account.Credentials.from_service_account_file(keyfile)
-
-        # Initialize a BigQuery client
         client = bigquery.Client(credentials=credentials, project=credentials.project_id)
 
         # Execute the query
@@ -69,13 +66,10 @@ def query_dataset(query, keyfile_path):
 
 def get_incremental_date(date, project_id,dataset,table_name, keyfile_path):
     try: 
-        # Path to your service account keyfile
         keyfile = keyfile_path
 
-        # Create credentials using the service account keyfile
+        # Create credentials & Initialize Client
         credentials = service_account.Credentials.from_service_account_file(keyfile)
-
-        # Initialize a BigQuery client
         client = bigquery.Client(credentials=credentials, project=credentials.project_id)
 
         query=f'''
@@ -102,105 +96,147 @@ def get_incremental_date(date, project_id,dataset,table_name, keyfile_path):
     except Exception as e:
         return (datetime.now() - timedelta(days=5)).strftime('%Y-%m-%dT%H:%M:%SZ')
 
-def get_connection_details(connection_name, table_name, keyfile_path):
-    # Path to your service account keyfile
-    keyfile = keyfile_path
-
-    # Create credentials using the service account keyfile
-    credentials = service_account.Credentials.from_service_account_file(keyfile)
-    client = bigquery.Client(credentials=credentials, project=credentials.project_id)
-
-    # Initialize a BigQuery client
-    client = bigquery.Client(credentials=credentials, project=credentials.project_id)
-
-    query = f'''
-        SELECT DISTINCT 
-        a.connection_name, 
-        a.connection_url, 
-        a.user_name, 
-        a.password_encrypted, 
-        a.security_token, 
-        b.ingestion_type,
-        b.dataset,
-        b.primary_key_column,
-        b.incremental_date_column,
-        b.load_type,
-        b.extra_parameters,
-        b.project_id,
-        b.dataset,
-        b.delimiter,
-        b.file_format,
-        b.quote_characters,
-        b.is_parquet,
-        b.is_external,
-        b.bucket,
-        b.bucket_destination
-        FROM `dw-metadata-utilities.metadata_utilities.ingestion_connection_info` as a
-        INNER JOIN `dw-metadata-utilities.metadata_utilities.ingestion_config` as b on a.connection_name = b.connection_name
-        WHERE 
-            a.connection_name = '{connection_name}'
-        AND
-            b.table_name = '{table_name}'
-        ;
-        ''' 
-
-    # Execute the query
-    query_job = client.query(query)
-
-    # Fetch the results
-    results = query_job.result()
-
-    # Store results in a dictionary 
-    result_dict = {} 
-    for row in results: 
-        row_dict = {key: row[key] for key in row.keys()} 
-        result_dict[row[0]] = row_dict # Using the first column's value as the dictionary key # Print the results
-
-    return result_dict
-
-def get_workflow_action_process_id(keyfile_path):
-    # Path to your service account keyfile
-    keyfile = keyfile_path
-
-    # Create credentials using the service account keyfile
-    credentials = service_account.Credentials.from_service_account_file(keyfile)
-    client = bigquery.Client(credentials=credentials, project=credentials.project_id)
-
-    # Initialize a BigQuery client
-    client = bigquery.Client(credentials=credentials, project=credentials.project_id)
-
-    query = '''
-            SELECT MAX(process_id) + 1 as process_id FROM `dw-metadata-utilities.metadata_utilities.workflow_action_history`;
-            ''' 
-
-    # Execute the query
-    query_job = client.query(query)
-
-    # Fetch the results
-    results = query_job.result()
-
-    # Store results in a dictionary 
-    result_dict = {} 
-    for row in results: 
-        row_dict = {key: row[key] for key in row.keys()} 
-        result_dict[row[0]] = row_dict # Using the first column's value as the dictionary key # Print the results
-    
-    # Identify Data Ingestion Workflow
-    for key, value in result_dict.items(): 
-            process_id= value['process_id']
-
-    return process_id
-
-def set_workflow_action_process_id(process_id, connection_name, dataset, table_name, execution_status,keyfile_path):
+def get_table_exists(project_id, dataset, table_name, keyfile_path):
     try:
-        # Path to your service account keyfile
         keyfile = keyfile_path
 
-        # Create credentials using the service account keyfile
+        # Create credentials & Initialize Client
         credentials = service_account.Credentials.from_service_account_file(keyfile)
         client = bigquery.Client(credentials=credentials, project=credentials.project_id)
 
-        # Initialize a BigQuery client
+        query = f'''
+                SELECT COUNT(1) as flag FROM `{project_id}.{dataset}.__TABLES_SUMMARY__` WHERE table_id = '{table_name}';
+                ''' 
+
+        query_job = client.query(query)
+
+        # Fetch the results
+        results = query_job.result()
+
+        # Store results in a dictionary 
+        result_dict = {} 
+        for row in results: 
+            row_dict = {key: row[key] for key in row.keys()} 
+            result_dict[row[0]] = row_dict # Using the first column's value as the dictionary key # Print the results
+    
+        # Identify Data Ingestion Workflow
+        for key, value in result_dict.items(): 
+            flag= value['flag']
+
+        return flag
+    except Exception as e:
+        return f"Error: {e}"    
+
+def get_connection_details(connection_name, table_name, keyfile_path):
+    try:
+        keyfile = keyfile_path
+
+        # Create credentials & Initialze Client
+        credentials = service_account.Credentials.from_service_account_file(keyfile)
+        client = bigquery.Client(credentials=credentials, project=credentials.project_id)
+
+        query = f'''
+            WITH column_details as (
+            SELECT 
+            source_system,
+            target_dataset,
+            table_name,
+            STRING_AGG(CONCAT(lower(column_name), ' ', (datatype)), ', ') AS source_column_details,
+            STRING_AGG(lower(column_name)) AS source_column_query,
+            STRING_AGG(CONCAT(lower(mapping_column), ' ', (datatype)), ', ') AS mapping_column_details,
+            STRING_AGG(lower(mapping_column)) AS mapping_column_query
+            FROM `dw-metadata-utilities.metadata_utilities.ingestion_column_details`
+            WHERE table_name = '{table_name}'
+            GROUP BY source_system,  target_dataset, table_name  
+            )
+            SELECT DISTINCT 
+            a.connection_name, 
+            a.connection_url, 
+            a.user_name, 
+            a.password_encrypted, 
+            a.security_token, 
+            b.ingestion_type,
+            b.dataset,
+            b.primary_key_column,
+            b.incremental_date_column,
+            b.load_type,
+            b.extra_parameters,
+            b.project_id,
+            b.dataset,
+            b.delimiter,
+            b.file_format,
+            b.quote_characters,
+            b.is_parquet,
+            b.is_external,
+            b.bucket,
+            b.bucket_destination,
+            c.source_column_details,
+            c.source_column_query,
+            c.mapping_column_details,
+            c.mapping_column_query
+            FROM `dw-metadata-utilities.metadata_utilities.ingestion_connection_info` as a
+            INNER JOIN `dw-metadata-utilities.metadata_utilities.ingestion_config` as b on a.connection_name = b.connection_name
+            LEFT JOIN column_details as c ON b.table_name = c.table_name
+            WHERE 
+                a.connection_name = '{connection_name}'
+            AND
+                b.table_name = '{table_name}'
+            ;
+            ''' 
+
+        # Execute the query
+        query_job = client.query(query)
+
+        # Fetch the results
+        results = query_job.result()
+
+        # Store results in a dictionary 
+        result_dict = {} 
+        for row in results: 
+            row_dict = {key: row[key] for key in row.keys()} 
+            result_dict[row[0]] = row_dict # Using the first column's value as the dictionary key # Print the results
+
+        return result_dict
+    except Exception as e:
+        return f"Error: {e}"    
+
+def get_workflow_action_process_id(keyfile_path):
+    try:
+        keyfile = keyfile_path
+
+        # Create credentials & Initialize Client
+        credentials = service_account.Credentials.from_service_account_file(keyfile)
+        client = bigquery.Client(credentials=credentials, project=credentials.project_id)
+
+        query = '''
+                SELECT MAX(process_id) + 1 as process_id FROM `dw-metadata-utilities.metadata_utilities.workflow_action_history`;
+                ''' 
+
+        query_job = client.query(query)
+
+        # Fetch the results
+        results = query_job.result()
+
+        # Store results in a dictionary 
+        result_dict = {} 
+        for row in results: 
+            row_dict = {key: row[key] for key in row.keys()} 
+            result_dict[row[0]] = row_dict # Using the first column's value as the dictionary key # Print the results
+    
+        # Identify Data Ingestion Workflow
+        for key, value in result_dict.items(): 
+            process_id= value['process_id']
+
+        return process_id
+    except Exception as e:
+        return f"Error: {e}"
+
+def set_workflow_action_process_id(process_id, connection_name, dataset, table_name, execution_status,keyfile_path):
+    try:
+        keyfile = keyfile_path
+
+        # Create credentials & Initialize Client
+        credentials = service_account.Credentials.from_service_account_file(keyfile)
         client = bigquery.Client(credentials=credentials, project=credentials.project_id)
 
         query = f'''
@@ -217,18 +253,14 @@ def set_workflow_action_process_id(process_id, connection_name, dataset, table_n
 
         return "SUCCESS"
     except Exception as e:
-        return f"ERROR: {e}"
+        return f"Error: {e}"
 
 def update_workflow_action_process_id(process_id, execution_status, keyfile_path):
     try:
-        # Path to your service account keyfile
         keyfile = keyfile_path
 
-        # Create credentials using the service account keyfile
+        # Create credentials & Initialize Client
         credentials = service_account.Credentials.from_service_account_file(keyfile)
-        client = bigquery.Client(credentials=credentials, project=credentials.project_id)
-
-        # Initialize a BigQuery client
         client = bigquery.Client(credentials=credentials, project=credentials.project_id)
 
         query = f'''
@@ -245,4 +277,4 @@ def update_workflow_action_process_id(process_id, execution_status, keyfile_path
 
         return "SUCCESS"
     except Exception as e:
-        return f"ERROR: {e}"
+        return f"Error: {e}"

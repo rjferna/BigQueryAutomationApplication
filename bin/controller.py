@@ -75,13 +75,13 @@ def main():
         logger.info("Obtaining Connection Credentials")
         pc = Prpcrypt(security_token)
         
-
+        # Identify Data Ingestion Workflow type
         if ingestion_type == 'REQUEST':
             logger.info("Set Workflow Action History Execution Record")
             workflow_result = set_workflow_action_process_id(process_id=process_id, connection_name=connection_name, dataset=dataset, table_name=args.get('asset'), execution_status=0,keyfile_path=config_var.get('gcp_creds'))
             logger.info(f"Workflow Action Result: {workflow_result}")
 
-            response_json = get_request(key=pc.decrypt(password_encrypted),
+            response = get_request(key=pc.decrypt(password_encrypted),
                                         url=connection_url,
                                         encoding=config_var.get('accepted_encoding')
                                         )
@@ -94,23 +94,23 @@ def main():
             incr_result = get_incremental_date(date=incremental_date_column, project_id=project_id,dataset=dataset,table_name=args.get('asset'), keyfile_path=config_var.get('gcp_creds'))
             logger.info(f'Data collection start datetime: {incr_result}')
 
-            response_json = get_request_payload(key=pc.decrypt(password_encrypted),
+            response = get_request_payload(key=pc.decrypt(password_encrypted),
                                                 url=connection_url,
                                                 encoding=config_var.get('accepted_encoding'),
                                                 start=incr_result,
                                                 end=datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ'),
                                                 interval=extra_parameters
                                                 )  
-        if "Error:" in response_json:
-            logger.info(f"{response_json}")
+        if "Error:" in response:
+            logger.info(f"{response}")
             update_result = update_workflow_action_process_id(process_id=process_id, execution_status=-1, keyfile_path=config_var.get('gcp_creds'))
             logger.info(f'Error: Updating Workflow Action Record: {update_result}')
-        elif response_json is None:
+        elif response is None:
             logger.info('Error: None Object returned')
             update_result = update_workflow_action_process_id(process_id=process_id, execution_status=-1, keyfile_path=config_var.get('gcp_creds'))
             logger.info(f'Error: Updating Workflow Action Record: {update_result}')
         else:
-            dict_to_json(response_json, config_var.get('file_path') + args.get('asset'))  #+ config_var.get('file_name'))
+            dict_to_json(response, config_var.get('file_path') + args.get('asset'))  #+ config_var.get('file_name'))
             update_result = update_workflow_action_process_id(process_id=process_id, execution_status=1, keyfile_path=config_var.get('gcp_creds'))
             logger.info(f'Updating Workflow Action Record: {update_result}')
         
