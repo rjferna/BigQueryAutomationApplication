@@ -5,20 +5,28 @@ The goal of this project repository is to build a framework to support automated
 
 Currently, the Framework is relying on a handful of internal tables in BigQuery.
 
-** INGESTION_CONNECTION_INFO **
+**INGESTION_CONNECTION_INFO**
 This table will hold the connection information for the endpoints
 
-** INGESTION_CONFIG ** 
+![alt text](connection_info.png)
+
+**INGESTION_CONFIG** 
 This table contains data/table ingestion configurations such as ingestion type, primary key, incremental or full data load, delimiter, file type etc.
 
-** INGESTION_COLUMN_DETAILS **
+![alt text](ingestion_config.png)
+
+**INGESTION_COLUMN_DETAILS**
 This table contains column details for the data that is being ingested such as column names, data types, ordinal positions, target table
 
-** WORKFLOW_ACTION_HISTORY **
+![alt text](ingestion_column_details.png)
+
+**WORKFLOW_ACTION_HISTORY**
 This table contains an audit log  with connection_name, start, end and status for each data ingestion workflow that is executed.
 TODO: Add column containing the bucket storage path for the execution log
 
-** CHANGE_EVENT **
+![alt text](workflow_action_history.png)
+
+**CHANGE_EVENT**
 TBD...
 
 ## Data Ingestions: 
