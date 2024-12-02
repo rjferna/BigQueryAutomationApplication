@@ -1,1 +1,7 @@
 bin/config.ini
+bin/playground.ipynb
+bin/playground.py
+bin/gcp_query.py
+
+data/
+logs/

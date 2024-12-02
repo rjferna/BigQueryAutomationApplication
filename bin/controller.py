@@ -131,8 +131,6 @@ def main():
             response_file = dict_to_json(response, config_var.get('file_path') + args.get('asset'))  #+ config_var.get('file_name'))
             logger.info(f'Writing response data to flat file')
 
-
-
         # Upload Data to GCP Bucket 
         logger.info(f'Uploading Data to Bucket Path: {bucket_destination + args.get('asset') + file_format.lower()}')
         upload_data = upload_to_bucket(bucket_name=bucket, 
@@ -156,8 +154,6 @@ def main():
                          destination_blob_name=logfile,
                          keyfile_path=config_var.get('gcp_creds') )        
         
-        #print(logfilepath, '\n', logfile)
-        #file = config_var.get('file_path') + args.get('asset') + '.json'
         sys.exit(0)
 
     except Exception as e:

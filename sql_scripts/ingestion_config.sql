@@ -28,7 +28,9 @@ escape_characters STRING,
 is_parquet  BOOL,
 is_external BOOL NOT NULL,
 bucket STRING NOT NULL,
-bucket_destination STRING NOT NULL
+bucket_destination STRING NOT NULL,
+archive_destination STRING NOT NULL,
+accepted_encoding STRING NOT
 );
 
 INSERT INTO `dw-metadata-utilities.metadata_utilities.ingestion_config`
@@ -38,8 +40,6 @@ primary_key_column, --ID
 incremental_date_column, --NULL
 load_type,  --INCR
 extra_parameters, --NULL
---run_status, --NULL
---process_id, --NULL
 delimiter,  --NULL
 source_system, --COINCAP
 connection_name, --COINCAP_ASSET
@@ -58,9 +58,11 @@ escape_characters, --NULL
 is_parquet, --FALSE
 is_external, --TRUE
 bucket, --dev-coincap-data
-bucket_destination --input/coincap_assets/
+bucket_destination, --input/
+archive_destination, --archive/coincap_assets/ 
+accepted_encoding --gzip
 ) VALUES
-('REQUEST_PAYLOAD','https://api.coincap.io/v2/assets/bitcoin/history/','ID','DATE','INCR','h1',NULL,'COINCAP','COINCAP_BITCOIN_HISTORY','COINCAP-DATA-HUB','EXTERNAL_COINCAP_DATA','EXTERNAL_COINCAP_BITCOIN_HISTORY','JSON',NULL,'COINCAP API 2.0','ADMIN',CURRENT_DATETIME,'ADMIN',CURRENT_DATETIME, NULL, NULL, FALSE, TRUE, 'dev-coincap-data', 'input/coincap_history'),
-('REQUEST','https://api.coincap.io/v2/exchanges/','ID',NULL,'FULL',NULL,NULL,'COINCAP','COINCAP_EXCHANGES','COINCAP-DATA-HUB','EXTERNAL_COINCAP_DATA','EXTERNAL_COINCAP_EXCHANGES','JSON',NULL,'COINCAP API 2.0','ADMIN',CURRENT_DATETIME,'ADMIN',CURRENT_DATETIME, NULL, NULL, FALSE, TRUE, 'dev-coincap-data', 'input/coincap_exchanges/'),
-('REQUEST','https://api.coincap.io/v2/rates/','ID',NULL,'FULL',NULL,NULL,'COINCAP','COINCAP_RATES','COINCAP-DATA-HUB','EXTERNAL_COINCAP_DATA','EXTERNAL_COINCAP_RATES','JSON',NULL,'COINCAP API 2.0','ADMIN',CURRENT_DATETIME,'ADMIN',CURRENT_DATETIME, NULL, NULL, FALSE, TRUE, 'dev-coincap-data', 'input/coincap_rates/'),
-('REQUEST','https://api.coincap.io/v2/assets/','ID',NULL,'FULL',NULL,NULL,'COINCAP','COINCAP_ASSET','COINCAP-DATA-HUB','EXTERNAL_COINCAP_DATA','EXTERNAL_COINCAP_ASSETS','JSON',NULL,'COINCAP API 2.0','ADMIN',CURRENT_DATETIME,'ADMIN',CURRENT_DATETIME, NULL, NULL, FALSE, TRUE, 'dev-coincap-data', 'input/coincap_assets/');
+('REQUEST_PAYLOAD','https://api.coincap.io/v2/assets/bitcoin/history/','ID','DATE','INCR','h1',NULL,'COINCAP','COINCAP_BITCOIN_HISTORY','COINCAP-DATA-HUB','EXTERNAL_COINCAP_DATA','EXTERNAL_COINCAP_BITCOIN_HISTORY','JSON',NULL,'COINCAP API 2.0','ADMIN',CURRENT_DATETIME,'ADMIN',CURRENT_DATETIME, NULL, NULL, FALSE, TRUE, 'dev-coincap-data', 'input/coincap_history','archive/coincap_history','gzip'),
+('REQUEST','https://api.coincap.io/v2/exchanges/','ID',NULL,'FULL',NULL,NULL,'COINCAP','COINCAP_EXCHANGES','COINCAP-DATA-HUB','EXTERNAL_COINCAP_DATA','EXTERNAL_COINCAP_EXCHANGES','JSON',NULL,'COINCAP API 2.0','ADMIN',CURRENT_DATETIME,'ADMIN',CURRENT_DATETIME, NULL, NULL, FALSE, TRUE, 'dev-coincap-data', 'input/coincap_exchanges/','archive/coincap_exchanges','gzip'),
+('REQUEST','https://api.coincap.io/v2/rates/','ID',NULL,'FULL',NULL,NULL,'COINCAP','COINCAP_RATES','COINCAP-DATA-HUB','EXTERNAL_COINCAP_DATA','EXTERNAL_COINCAP_RATES','JSON',NULL,'COINCAP API 2.0','ADMIN',CURRENT_DATETIME,'ADMIN',CURRENT_DATETIME, NULL, NULL, FALSE, TRUE, 'dev-coincap-data', 'input/coincap_rates/','archive/coincap_rates','gzip'),
+('REQUEST','https://api.coincap.io/v2/assets/','ID',NULL,'FULL',NULL,NULL,'COINCAP','COINCAP_ASSET','COINCAP-DATA-HUB','EXTERNAL_COINCAP_DATA','EXTERNAL_COINCAP_ASSETS','JSON',NULL,'COINCAP API 2.0','ADMIN',CURRENT_DATETIME,'ADMIN',CURRENT_DATETIME, NULL, NULL, FALSE, TRUE, 'dev-coincap-data', 'input/coincap_assets/','archive/coincap_assets','gzip');

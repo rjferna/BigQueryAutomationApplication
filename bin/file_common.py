@@ -34,6 +34,6 @@ def dict_to_json(my_dict, json_filename):
         with open(json_filename + ".json", 'w') as json_file:
             json.dump(my_dict, json_file, indent=4)  # Indent for readability (optional)
 
-        return json_filename + '.json' 
+        return f'{json_filename}.json' 
     except Exception as e:
         return f"Error: {e}"
