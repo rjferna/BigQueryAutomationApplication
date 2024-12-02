@@ -3,10 +3,14 @@ The goal of this project repository is to build a framework to support automated
 
 ## Bigquery Metadata Utility Objects
 
-Currently, the Framework is relying on a handful of internal tables in BigQuery.
+The Framework is relying on a handful of BigQuery tables. 
+
+**ER Diagram:**
+![alt text](metadata_utilities.png)
+
 
 **INGESTION_CONNECTION_INFO**
-This table will hold the connection information for the endpoints
+This table will hold endpoint connection information as well as encrypted credentials
 
 ![alt text](connection_info.png)
 
@@ -22,7 +26,7 @@ This table contains column details for the data that is being ingested such as c
 
 **WORKFLOW_ACTION_HISTORY**
 This table contains an audit log  with connection_name, start, end and status for each data ingestion workflow that is executed.
-TODO: Add column containing the bucket storage path for the execution log
+* **TODO:** Add column containing the bucket storage path for the execution log
 
 ![alt text](workflow_action_history.png)
 
@@ -37,7 +41,7 @@ CoinCap is a useful tool for real-time pricing and market activity for over 1,00
 
 CoinCap Documentation: [https://docs.coincap.io/#d8fd6001-e127-448d-aadd-bfbfe2c89dbe](https://docs.coincap.io/#intro)
 
-** TBD **
+**TBD**
 
 Looking into additional sources I can use to flesh out this project. 
 
@@ -74,9 +78,11 @@ Looking into additional sources I can use to flesh out this project.
 * **CRYPTO MARKETS DATA:** python3 controller.py -s COINCAP_MARKETS -a EXTERNAL_COINCAP_MARKETS -l info
 
 ### TODO: 
-* Upload data to respective GCP Bucket 
-* Upload Log to GCP metadata bucket after job execution
-* Create External Table
-* Add functionality to create internal tables
-* Add functionality to update incremental storage tables
-* Add change_event log to record pre/post changes on column level
+* ~~Upload data to respective GCP Bucket~~ 
+* ~~Upload Log to GCP metadata bucket after job execution~~
+* ~~Archive Legacy data file.~~
+* Add functionality to create external table.
+* Add functionality to create internal table.
+* Add functionality to incremental data load.
+* Add Change Event metadata log to record pre/post changes on column level.
+
