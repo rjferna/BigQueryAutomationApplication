@@ -44,6 +44,36 @@ def upload_to_bucket(bucket_name, source_file_name, destination_blob_name, keyfi
     except Exception as e:
         return f"Error: {e}."
 
+def archive_file(source_bucket_name, source_file_name, archive_bucket_name, archive_destination,archive_file_name, keyfile_path):
+    try:
+        # Initialize a client with the service account keyfile 
+        storage_client = storage.Client.from_service_account_json(keyfile_path)
+
+        # Get the source bucket
+        source_bucket = storage_client.bucket(source_bucket_name)
+        source_file = source_bucket.blob(source_file_name)
+
+        # Get the destination bucket
+        archive_destination_bucket = storage_client.bucket(archive_bucket_name)
+
+        # Generate the new filename with current date-time
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        new_name = f'{timestamp}_{archive_file_name}' # archive_file_name.format(timestamp=timestamp)
+
+        # Copy the blob to the new location with the new name
+        source_bucket.copy_blob(
+            source_file,
+            archive_destination_bucket,
+            archive_destination + new_name
+        )
+
+        # Delete the original blob from the source bucket
+        source_file.delete()
+
+        return 'SUCCESS'
+    except Exception as e:
+        return f'Error: {e}'
+
 
 def query_dataset(query, keyfile_path):
     try: 

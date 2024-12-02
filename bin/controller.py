@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from config import Config
 from parse_args import parse_args
 from logger import set_logger
-from gcp_common import get_connection_details, get_workflow_action_process_id, set_workflow_action_process_id, update_workflow_action_process_id, get_incremental_date, upload_to_bucket
+from gcp_common import get_connection_details, get_workflow_action_process_id, set_workflow_action_process_id, update_workflow_action_process_id, get_incremental_date, upload_to_bucket, archive_file
 from requests_common import get_request, get_request_payload
 from encryption_decryption_common import Prpcrypt
 from file_common import dict_to_json
@@ -131,7 +131,20 @@ def main():
             response_file = dict_to_json(response, config_var.get('file_path') + args.get('asset'))  #+ config_var.get('file_name'))
             logger.info(f'Writing response data to flat file')
 
-        # Upload Data to GCP Bucket 
+        # Upload Data to GCP Bucket
+        logger.info(f'Checking to see if file exists: {bucket_destination + args.get('asset') + '.' + file_format.lower()}') 
+        archive_response = archive_file(source_bucket_name=bucket, 
+                                        source_file_name=bucket_destination + args.get('asset') + '.' + file_format.lower(), 
+                                        archive_bucket_name=bucket,
+                                        archive_destination=archive_destination, 
+                                        archive_file_name=args.get('asset') + '.' + file_format.lower(), 
+                                        keyfile_path=config_var.get('gcp_creds')
+                                        )
+        if "Error:" in archive_response:
+            logger.info(f'{archive_response}')
+        else:
+            logger.info(f'Archive Status: {archive_response}')
+
         logger.info(f'Uploading Data to Bucket Path: {bucket_destination + args.get('asset') + file_format.lower()}')
         upload_data = upload_to_bucket(bucket_name=bucket, 
                                        source_file_name=response_file, 
