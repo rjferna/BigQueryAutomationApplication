@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from config import Config
 from parse_args import parse_args
 from logger import set_logger
-from gcp_common import get_connection_details, get_workflow_action_process_id, set_workflow_action_process_id, update_workflow_action_process_id, get_incremental_date
+from gcp_common import get_connection_details, get_workflow_action_process_id, set_workflow_action_process_id, update_workflow_action_process_id, get_incremental_date, upload_to_bucket
 from requests_common import get_request, get_request_payload
 from encryption_decryption_common import Prpcrypt
 from file_common import dict_to_json
@@ -64,13 +64,14 @@ def main():
             is_external= value['is_external']
             bucket= value['bucket']
             bucket_destination=value['bucket_destination']
-
+            archive_destination=value['archive_destination']
+            accepted_encoding=value['accepted_encoding']
 
         # Get Process_Id from GCP workflow_action_history 
         logger.info(f"Get Process_ID From GCP Worflow Action History.")
         process_id = get_workflow_action_process_id(keyfile_path=config_var.get('gcp_creds'))
         logger.info(f"Output: ({process_id}).")
-        
+
         # Decrypt Credentials
         logger.info("Obtaining Connection Credentials")
         pc = Prpcrypt(security_token)
@@ -78,25 +79,42 @@ def main():
         # Identify Data Ingestion Workflow type
         if ingestion_type == 'REQUEST':
             logger.info("Set Workflow Action History Execution Record")
-            workflow_result = set_workflow_action_process_id(process_id=process_id, connection_name=connection_name, dataset=dataset, table_name=args.get('asset'), execution_status=0,keyfile_path=config_var.get('gcp_creds'))
+            workflow_result = set_workflow_action_process_id(process_id=process_id, 
+                                                             connection_name=connection_name, 
+                                                             dataset=dataset, 
+                                                             table_name=args.get('asset'), 
+                                                             execution_status=0,
+                                                             keyfile_path=config_var.get('gcp_creds')
+                                                             )
             logger.info(f"Workflow Action Result: {workflow_result}")
 
             response = get_request(key=pc.decrypt(password_encrypted),
                                         url=connection_url,
-                                        encoding=config_var.get('accepted_encoding')
+                                        encoding=accepted_encoding
                                         )
         if ingestion_type == 'REQUEST_PAYLOAD':
             logger.info("Set Workflow Action History Execution Record")
-            workflow_result = set_workflow_action_process_id(process_id=process_id, connection_name=connection_name, dataset=dataset, table_name=args.get('asset'), execution_status=0,keyfile_path=config_var.get('gcp_creds'))
+            workflow_result = set_workflow_action_process_id(process_id=process_id, 
+                                                             connection_name=connection_name, 
+                                                             dataset=dataset, 
+                                                             table_name=args.get('asset'), 
+                                                             execution_status=0,
+                                                             keyfile_path=config_var.get('gcp_creds')
+                                                             )
             logger.info(f"Workflow Action Result: {workflow_result}")
 
             logger.info('Get last incremental loadtime')
-            incr_result = get_incremental_date(date=incremental_date_column, project_id=project_id,dataset=dataset,table_name=args.get('asset'), keyfile_path=config_var.get('gcp_creds'))
+            incr_result = get_incremental_date(date=incremental_date_column, 
+                                               project_id=project_id,
+                                               dataset=dataset,
+                                               table_name=args.get('asset'), 
+                                               keyfile_path=config_var.get('gcp_creds')
+                                               )
             logger.info(f'Data collection start datetime: {incr_result}')
 
             response = get_request_payload(key=pc.decrypt(password_encrypted),
                                                 url=connection_url,
-                                                encoding=config_var.get('accepted_encoding'),
+                                                encoding=accepted_encoding,
                                                 start=incr_result,
                                                 end=datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ'),
                                                 interval=extra_parameters
@@ -110,12 +128,36 @@ def main():
             update_result = update_workflow_action_process_id(process_id=process_id, execution_status=-1, keyfile_path=config_var.get('gcp_creds'))
             logger.info(f'Error: Updating Workflow Action Record: {update_result}')
         else:
-            dict_to_json(response, config_var.get('file_path') + args.get('asset'))  #+ config_var.get('file_name'))
-            update_result = update_workflow_action_process_id(process_id=process_id, execution_status=1, keyfile_path=config_var.get('gcp_creds'))
-            logger.info(f'Updating Workflow Action Record: {update_result}')
-        
-        logger.info('Data Ingestion Complete.' + '\n' + 'Execution END.')
+            response_file = dict_to_json(response, config_var.get('file_path') + args.get('asset'))  #+ config_var.get('file_name'))
+            logger.info(f'Writing response data to flat file')
 
+
+
+        # Upload Data to GCP Bucket 
+        logger.info(f'Uploading Data to Bucket Path: {bucket_destination + args.get('asset') + file_format.lower()}')
+        upload_data = upload_to_bucket(bucket_name=bucket, 
+                                       source_file_name=response_file, 
+                                       destination_blob_name=bucket_destination + args.get('asset') + '.' + file_format.lower(), 
+                                       keyfile_path=config_var.get('gcp_creds')
+                                       )
+        if "Error:" in upload_data:
+            update_workflow_action_process_id(process_id=process_id, execution_status=-1, keyfile_path=config_var.get('gcp_creds'))                
+            logger.info('Data Ingestion Completed with Errors.' + '\n' + 'Execution END.')
+        else:
+            update_workflow_action_process_id(process_id=process_id, execution_status=1, keyfile_path=config_var.get('gcp_creds'))
+            logger.info('Data Ingestion Complete.' + '\n' + 'Execution END.')
+
+        logfilepath = config_var.get('log_path') + '{}_{:%Y_%m_%d}.log'.format(log_domain, datetime.now())
+        logfile = config_var.get('log_bucket_workflow_execution_destination') + '{}_{:%Y_%m_%d}.log'.format(log_domain, datetime.now())
+     
+        # Upload Workflow Execution Log File to GCP Bucket
+        upload_to_bucket(bucket_name=config_var.get('log_bucket'), 
+                         source_file_name=logfilepath,
+                         destination_blob_name=logfile,
+                         keyfile_path=config_var.get('gcp_creds') )        
+        
+        #print(logfilepath, '\n', logfile)
+        #file = config_var.get('file_path') + args.get('asset') + '.json'
         sys.exit(0)
 
     except Exception as e:

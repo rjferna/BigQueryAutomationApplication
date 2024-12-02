@@ -18,7 +18,7 @@ def dict_to_csv(my_dict, csv_filename):
             # Write the values (values of the dictionary)
             writer.writerow(my_dict.values())
 
-        return f"CSV file '{csv_filename}.csv' created successfully!"
+        return f'{csv_filename}.csv'
     except Exception as e:
         return f"Error: {e}"
 
@@ -34,6 +34,6 @@ def dict_to_json(my_dict, json_filename):
         with open(json_filename + ".json", 'w') as json_file:
             json.dump(my_dict, json_file, indent=4)  # Indent for readability (optional)
 
-        return f"JSON file '{json_filename}' created successfully!"
+        return json_filename + '.json' 
     except Exception as e:
         return f"Error: {e}"

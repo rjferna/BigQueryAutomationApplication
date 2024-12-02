@@ -28,17 +28,22 @@ def list_files_in_bucket(bucket_name, bucket_destination,keyfile_path):
     return files
 
 def upload_to_bucket(bucket_name, source_file_name, destination_blob_name, keyfile_path): 
-    # Initialize a client with the service account keyfile 
-    storage_client = storage.Client.from_service_account_json(keyfile_path) 
+    try: 
+        # Initialize a client with the service account keyfile 
+        storage_client = storage.Client.from_service_account_json(keyfile_path) 
     
-    # Get the bucket 
-    bucket = storage_client.bucket(bucket_name) 
+        # Get the bucket 
+        bucket = storage_client.bucket(bucket_name) 
     
-    # Create a blob and upload the file to the bucket 
-    blob = bucket.blob(destination_blob_name) 
-    blob.upload_from_filename(source_file_name) 
+        # Create a blob and upload the file to the bucket 
+        blob = bucket.blob(destination_blob_name) 
+        blob.upload_from_filename(source_file_name) 
     
-    print(f"File {source_file_name} uploaded to {destination_blob_name}.")
+        #print(f"File {source_file_name} uploaded to {destination_blob_name}.")
+        return "SUCCESS"
+    except Exception as e:
+        return f"Error: {e}."
+
 
 def query_dataset(query, keyfile_path):
     try: 
@@ -139,7 +144,7 @@ def get_connection_details(connection_name, table_name, keyfile_path):
             WITH column_details as (
             SELECT 
             source_system,
-            target_dataset,
+            dataset,
             table_name,
             STRING_AGG(CONCAT(lower(column_name), ' ', (datatype)), ', ') AS source_column_details,
             STRING_AGG(lower(column_name)) AS source_column_query,
@@ -147,7 +152,7 @@ def get_connection_details(connection_name, table_name, keyfile_path):
             STRING_AGG(lower(mapping_column)) AS mapping_column_query
             FROM `dw-metadata-utilities.metadata_utilities.ingestion_column_details`
             WHERE table_name = '{table_name}'
-            GROUP BY source_system,  target_dataset, table_name  
+            GROUP BY source_system,  dataset, table_name  
             )
             SELECT DISTINCT 
             a.connection_name, 
@@ -170,6 +175,8 @@ def get_connection_details(connection_name, table_name, keyfile_path):
             b.is_external,
             b.bucket,
             b.bucket_destination,
+            b.archive_destination,
+            b.accepted_encoding,
             c.source_column_details,
             c.source_column_query,
             c.mapping_column_details,

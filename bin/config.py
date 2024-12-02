@@ -6,7 +6,8 @@ class Config:
                      'archive_path',
                      'file_path',
                      'log_path',
-                     'accepted_encoding'
+                     'log_bucket',
+                     'log_bucket_workflow_execution_destination'
                 ]
     
     
