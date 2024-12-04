@@ -1,12 +1,9 @@
 import csv
 import json
+import pandas as pd
+from flatten_dict import flatten
 
 def dict_to_csv(my_dict, csv_filename):
-    """
-    Converts a dictionary to a CSV file.
-    Args: my_dict (dict): The input dictionary; csv_filename (str): The desired filename for the CSV output.
-    Returns: str: A message indicating success or an error.
-    """
     try:
         # Open the CSV file for writing
         with open(csv_filename + ".csv", 'w', newline='') as csv_file:
@@ -24,11 +21,6 @@ def dict_to_csv(my_dict, csv_filename):
 
 
 def dict_to_json(my_dict, json_filename):
-    """
-    Converts a dictionary to a JSON file.
-    Args: my_dict (dict): The input dictionary;  json_filename (str): The desired filename for the JSON output.
-    Returns: None
-    """
     try:
         # Write the dictionary to a JSON file
         with open(json_filename + ".json", 'w') as json_file:
@@ -37,3 +29,31 @@ def dict_to_json(my_dict, json_filename):
         return f'{json_filename}.json' 
     except Exception as e:
         return f"Error: {e}"
+    
+def dict_to_parquet(my_dict, parquet_filename):
+    try:
+        # Convert dictionary to DataFrame
+        df = pd.DataFrame(my_dict.items(), columns=['key', 'value'])
+        
+        # Write the DataFrame to Parquet
+        df.to_parquet(f"{parquet_filename}.parquet", engine='pyarrow')  # You can choose 'fastparquet' if preferred
+
+        return f'{parquet_filename}.parquet' 
+    except Exception as e:
+        return f"Error: {e}"
+    
+def flatten_dict_to_parquet(my_dict, parquet_filename):
+    try:
+        # flatten nested dictionary.
+        flat_dict = flatten(my_dict, reducer='dot')
+
+        #Convert to dictionary
+        df = pd.DataFrame([flat_dict])
+        
+        # Write the DataFrame to Parquet
+        df.to_parquet(f"{parquet_filename}.parquet", engine='pyarrow')  # You can choose 'fastparquet' if preferred
+
+
+        return f'{parquet_filename}.parquet' 
+    except Exception as e:
+        return f"Error: {e}"    

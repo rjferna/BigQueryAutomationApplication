@@ -6,3 +6,8 @@ bin/gcp_query.py
 
 data/
 logs/
+
+metadata_utilities.drawio
+metadata_utilities.drawio:Zone.Identifier
+metadata_utilities.drawio.png
+metadata_utilities.drawio.png:Zone.Identifier

@@ -1,6 +1,7 @@
 import requests
 import time
 
+
 def get_unix_timestamp(date_str):
     try:
         timestamp = int(time.mktime(time.strptime(date_str, '%Y-%m-%dT%H:%M:%SZ'))) * 1000
@@ -14,7 +15,7 @@ def get_request(key, url, encoding):
     base_url = url
     accepted_encoding = encoding
 
-    print(base_url)
+    #print(base_url)
 
     headers = {
         'Accept-Encoding': accepted_encoding, # Enables Compression
@@ -25,7 +26,7 @@ def get_request(key, url, encoding):
     response_json = response.json()
 
     if response.status_code == 200:
-        return response_json['data']
+        return response_json
     else:
         return f"Error: {response_json.get('error', 'Unknown error')}"
     

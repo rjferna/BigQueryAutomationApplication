@@ -315,3 +315,28 @@ def update_workflow_action_process_id(process_id, execution_status, keyfile_path
         return "SUCCESS"
     except Exception as e:
         return f"Error: {e}"
+    
+def create_external_table(project_id, dataset, table_name, bucket_destination_name, file_format, keyfile_path):
+    try:
+        keyfile = keyfile_path
+
+        # Create credentials & Initialize Client
+        credentials = service_account.Credentials.from_service_account_file(keyfile)
+        client = bigquery.Client(credentials=credentials, project=credentials.project_id)
+
+        query = f'''
+                CREATE OR REPLACE EXTERNAL TABLE `{project_id.lower()}.{dataset.lower()}.{table_name.lower()}`
+                OPTIONS (
+                format = '{file_format}',
+                uris = ['gs://{bucket_destination_name}']
+                );
+                ''' 
+
+        query_job = client.query(query)
+
+        # Fetch the results
+        results = query_job.result()
+
+        return "SUCCESS"
+    except Exception as e:
+        return f"Error: {e}"     

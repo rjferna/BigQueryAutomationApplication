@@ -6,10 +6,10 @@ from datetime import datetime, timedelta
 from config import Config
 from parse_args import parse_args
 from logger import set_logger
-from gcp_common import get_connection_details, get_workflow_action_process_id, set_workflow_action_process_id, update_workflow_action_process_id, get_incremental_date, upload_to_bucket, archive_file
+from gcp_common import get_connection_details, get_workflow_action_process_id, set_workflow_action_process_id, update_workflow_action_process_id, get_incremental_date, upload_to_bucket, create_external_table, archive_file
 from requests_common import get_request, get_request_payload
 from encryption_decryption_common import Prpcrypt
-from file_common import dict_to_json
+from file_common import dict_to_parquet, flatten_dict_to_parquet
 
 def main():
     args = parse_args('Data Ingestion Controller', 'Controller script for data ingestion modules.')
@@ -67,15 +67,21 @@ def main():
             archive_destination=value['archive_destination']
             accepted_encoding=value['accepted_encoding']
 
+
+
         # Get Process_Id from GCP workflow_action_history 
         logger.info(f"Get Process_ID From GCP Worflow Action History.")
         process_id = get_workflow_action_process_id(keyfile_path=config_var.get('gcp_creds'))
         logger.info(f"Output: ({process_id}).")
 
+
+
         # Decrypt Credentials
         logger.info("Obtaining Connection Credentials")
         pc = Prpcrypt(security_token)
-        
+
+
+
         # Identify Data Ingestion Workflow type
         if ingestion_type == 'REQUEST':
             logger.info("Set Workflow Action History Execution Record")
@@ -128,8 +134,11 @@ def main():
             update_result = update_workflow_action_process_id(process_id=process_id, execution_status=-1, keyfile_path=config_var.get('gcp_creds'))
             logger.info(f'Error: Updating Workflow Action Record: {update_result}')
         else:
-            response_file = dict_to_json(response, config_var.get('file_path') + args.get('asset'))  #+ config_var.get('file_name'))
+            logger.info(f'Response Type: {type(response)}')
+            response_file = flatten_dict_to_parquet(response, config_var.get('file_path') + args.get('asset'))  #+ config_var.get('file_name'))
             logger.info(f'Writing response data to flat file')
+
+
 
         # Upload Data to GCP Bucket
         logger.info(f'Checking to see if file exists: {bucket_destination + args.get('asset') + '.' + file_format.lower()}') 
@@ -141,22 +150,52 @@ def main():
                                         keyfile_path=config_var.get('gcp_creds')
                                         )
         if "Error:" in archive_response:
-            logger.info(f'{archive_response}')
+            logger.info(f'Error: {archive_response}')
         else:
             logger.info(f'Archive Status: {archive_response}')
 
-        logger.info(f'Uploading Data to Bucket Path: {bucket_destination + args.get('asset') + file_format.lower()}')
+        logger.info(f'Uploading Data to Bucket Path: {bucket_destination}{args.get('asset')}.{file_format.lower()}')
         upload_data = upload_to_bucket(bucket_name=bucket, 
                                        source_file_name=response_file, 
                                        destination_blob_name=bucket_destination + args.get('asset') + '.' + file_format.lower(), 
                                        keyfile_path=config_var.get('gcp_creds')
                                        )
         if "Error:" in upload_data:
+            logger.info(f'{upload_data}')
+            update_workflow_action_process_id(process_id=process_id, execution_status=-1, keyfile_path=config_var.get('gcp_creds'))
+            logger.info('Data Ingestion Completed with Errors.' + '\n' + 'Execution END.')
+
+            logfilepath = config_var.get('log_path') + '{}_{:%Y_%m_%d}.log'.format(log_domain, datetime.now())
+            logfile = config_var.get('log_bucket_workflow_execution_destination') + '{}_{:%Y_%m_%d}.log'.format(log_domain, datetime.now())
+     
+            # Upload Workflow Execution Log File to GCP Bucket
+            upload_to_bucket(bucket_name=config_var.get('log_bucket'), 
+                         source_file_name=logfilepath,
+                         destination_blob_name=logfile,
+                         keyfile_path=config_var.get('gcp_creds') )
+            sys.exit(1)
+
+        print(bucket + bucket_destination + args.get('asset') + '.' + file_format.lower())
+
+        # Create External Table
+        logger.info(f"Creating External Table: {project_id}.{dataset}.{args.get('asset').lower()}")
+        create_external = create_external_table(
+                                        project_id=project_id, 
+                                        dataset=dataset, 
+                                        table_name=args.get('asset'), 
+                                        bucket_destination_name=bucket + '/' + bucket_destination + args.get('asset') + '.' + file_format.lower(), 
+                                        file_format=file_format, 
+                                        keyfile_path=config_var.get('gcp_creds')
+                                        )
+
+        if "Error:" in create_external:
+            logger.info(f'{create_external}')
             update_workflow_action_process_id(process_id=process_id, execution_status=-1, keyfile_path=config_var.get('gcp_creds'))                
             logger.info('Data Ingestion Completed with Errors.' + '\n' + 'Execution END.')
         else:
             update_workflow_action_process_id(process_id=process_id, execution_status=1, keyfile_path=config_var.get('gcp_creds'))
             logger.info('Data Ingestion Complete.' + '\n' + 'Execution END.')
+        
 
         logfilepath = config_var.get('log_path') + '{}_{:%Y_%m_%d}.log'.format(log_domain, datetime.now())
         logfile = config_var.get('log_bucket_workflow_execution_destination') + '{}_{:%Y_%m_%d}.log'.format(log_domain, datetime.now())
