@@ -1,9 +1,15 @@
 ## Intro
-The goal of this project repository is to build a framework to support automated data collection leveraging GCP storage & Bigquery.
+The goal of this project repository is to build an application framework to support automated data collection leveraging GCP storage & Bigquery.
 
 ## Bigquery Metadata Utility Objects
 
-The Framework is relying on a handful of BigQuery tables. 
+The Framework is utilizing on a handful of BigQuery tables that belong to the `dw-metadata-utilites` project which holds a dataset called `metadata-utilities`.
+A user will enter data source connection information, data ingestionsion configuration, and column details into SQL tables. The user can then execute the 
+python controller script with the required data ingestion arguements which identify the data source we are accessing. The controller script will pull the required
+data ingestion details from the `metadata-utilities` tables and begin extraction from the data source and writing the data into the target GCP storage.
+
+As the controller script is running a log file is generated detailing each action taken by the controller script. As well as the start and end datetimes of the workflow execution which
+is recorded in the `workflow_action_history` table with a unique `process_id` for each job execution.
 
 **ER Diagram:**
 ![alt text](metadata_utilities.png)
