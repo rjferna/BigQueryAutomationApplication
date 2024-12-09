@@ -3,10 +3,11 @@ The goal of this project repository is to build an application framework to supp
 
 ## Bigquery Metadata Utility Objects
 
-The Framework is utilizing on a handful of BigQuery tables that belong to the `dw-metadata-utilites` project which holds a dataset called `metadata-utilities`.
-A user will enter data source connection information, data ingestionsion configuration, and column details into SQL tables. The user can then execute the 
-python controller script with the required data ingestion arguements which identify the data source we are accessing. The controller script will pull the required
-data ingestion details from the `metadata-utilities` tables and begin extraction from the data source and writing the data into the target GCP storage.
+The Framework is utilizing on a handful of BigQuery tables in the `dw-metadata-utilites` project which holds a dataset called `metadata-utilities`.
+A user will enter data source connection information, data ingestionsion configuration, and column details into these SQL tables. The user can then execute the 
+python controller script with the required data ingestion arguements which help identify the data source we are accessing and data we are attempting to extract. 
+The controller script will then pull the required data ingestion details from the `metadata-utilities` tables and begin extraction from the data source, writing 
+the data into the target GCP storage.
 
 As the controller script is running a log file is generated detailing each action taken by the controller script. As well as the start and end datetimes of the workflow execution which
 is recorded in the `workflow_action_history` table with a unique `process_id` for each job execution.
@@ -41,9 +42,10 @@ TBD...
 
 ## Data Ingestions: 
 
-**What is CoinCap?**
+**CoinCap**
 
-CoinCap is a useful tool for real-time pricing and market activity for over 1,000 cryptocurrencies. By collecting exchange data from thousands of markets, we are able to offer transparent and accurate data on asset price and availability. 
+CoinCap is a useful tool for real-time pricing and market activity for over 1,000 cryptocurrencies. By collecting exchange data from thousands of markets, we are able to offer
+transparent and accurate data on asset price and availability. 
 
 CoinCap Documentation: [https://docs.coincap.io/#d8fd6001-e127-448d-aadd-bfbfe2c89dbe](https://docs.coincap.io/#intro)
 
@@ -87,7 +89,7 @@ Looking into additional sources I can use to flesh out this project.
 * ~~Upload data to respective GCP Bucket~~ 
 * ~~Upload Log to GCP metadata bucket after job execution~~
 * ~~Archive Legacy data file.~~
-* Add functionality to create external table.
+* ~~Add functionality to create external table.~~
 * Add functionality to create internal table.
 * Add functionality to incremental data load.
 * Add Change Event metadata log to record pre/post changes on column level.

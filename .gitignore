@@ -4,6 +4,7 @@ bin/playground.ipynb
 bin/playground.py
 bin/gcp_query.py
 
+archive/
 data/
 logs/
 

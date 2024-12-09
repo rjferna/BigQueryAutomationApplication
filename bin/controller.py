@@ -9,7 +9,7 @@ from logger import set_logger
 from gcp_common import get_connection_details, get_workflow_action_process_id, set_workflow_action_process_id, update_workflow_action_process_id, get_incremental_date, upload_to_bucket, create_external_table, archive_file
 from requests_common import get_request, get_request_payload
 from encryption_decryption_common import Prpcrypt
-from file_common import dict_to_parquet, flatten_dict_to_parquet
+from file_common import response_to_parquet
 
 def main():
     args = parse_args('Data Ingestion Controller', 'Controller script for data ingestion modules.')
@@ -135,7 +135,9 @@ def main():
             logger.info(f'Error: Updating Workflow Action Record: {update_result}')
         else:
             logger.info(f'Response Type: {type(response)}')
-            response_file = flatten_dict_to_parquet(response, config_var.get('file_path') + args.get('asset'))  #+ config_var.get('file_name'))
+            response_file = response_to_parquet(response_data=response, 
+                                                parquet_filename=config_var.get('file_path') + args.get('asset')
+                                                )  #+ config_var.get('file_name'))
             logger.info(f'Writing response data to flat file')
 
 
