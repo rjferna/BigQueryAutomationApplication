@@ -90,9 +90,10 @@ Looking into additional sources I can use to flesh out this project.
 * ~~Upload Log to GCP metadata bucket after job execution~~
 * ~~Archive Legacy data file.~~
 * ~~Add functionality to create external table.~~
-* Add functionality to create internal tables.
+* ~~Add functionality to create internal tables.~~
     * ~~Staging Table with Ingestion column details~~ 
-    * Reference Tables with DW Created Datetime & Load Datetime
-* Add functionality to incremental data load.
+    * ~~Reference Tables with DW Created Datetime & Load Datetime~~
+* ~~Add functionality for Full data load on Reference Table.~~
+* Add functionality for Incremental data load on Reference Tables.
 * Add Change Event metadata log to record pre/post changes on column level.
 

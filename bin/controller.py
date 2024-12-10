@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from config import Config
 from parse_args import parse_args
 from logger import set_logger
-from gcp_common import get_connection_details, get_column_details, get_workflow_action_process_id, set_workflow_action_process_id, update_workflow_action_process_id, get_incremental_date, upload_to_bucket, create_external_table, archive_file, create_and_load_staging_table
+from gcp_common import get_connection_details, get_column_details, get_workflow_action_process_id, set_workflow_action_process_id, update_workflow_action_process_id, get_incremental_date, upload_to_bucket, create_external_table, archive_file, create_and_load_staging_table, get_table_exists, create_and_load_reference_table
 from requests_common import get_request, get_request_payload
 from encryption_decryption_common import Prpcrypt
 from file_common import response_to_parquet
@@ -40,7 +40,7 @@ def main():
         # Get Connection Details from GCP
         logger.info(f"Querying GCP for Data Ingestion Details: ({args.get('section')}, {args.get('asset')})")
         results = get_connection_details(connection_name=args.get('section'), table_name=args.get('asset'), keyfile_path=config_var.get('gcp_creds'))
-        ###logger.info(f"Output: ({results}).")
+
 
         # Assign Data Ingestion Details
         for key, value in results.items(): 
@@ -240,7 +240,7 @@ def main():
 
 
         # Drop & Create Staging Table
-        logger.info(f"Creating and loading Staging Table: {project_id}.{dataset}.stg_{args.get('asset').lower()}")
+        logger.info(f"Creating and loading Staging Table: {project_id}.stg_{dataset}.{args.get('asset').lower()}")
         create_load_staging = create_and_load_staging_table(
                                         project_id=project_id, 
                                         dataset=dataset, 
@@ -254,19 +254,51 @@ def main():
             logger.info(f'{create_load_staging}')
             update_workflow_action_process_id(process_id=process_id, execution_status=-1, keyfile_path=config_var.get('gcp_creds'))                
             logger.info('Data Ingestion Completed with Errors.' + '\n' + 'Execution END.')
-        else:
-            logger.info(f"Create and Load Staging Table: {project_id}.{dataset}.stg_{args.get('asset').lower()}")
-            update_workflow_action_process_id(process_id=process_id, execution_status=1, keyfile_path=config_var.get('gcp_creds'))
-            logger.info('Data Ingestion Complete.' + '\n' + 'Execution END.')
+
+            logfilepath = config_var.get('log_path') + '{}_{:%Y_%m_%d}.log'.format(log_domain, datetime.now())
+            logfile = config_var.get('log_bucket_workflow_execution_destination') + '{}_{:%Y_%m_%d}.log'.format(log_domain, datetime.now())
+
+            # Upload Workflow Execution Log File to GCP Bucket
+            upload_to_bucket(bucket_name=config_var.get('log_bucket'), 
+                             source_file_name=logfilepath,
+                            destination_blob_name=logfile,
+                            keyfile_path=config_var.get('gcp_creds'))
+            sys.exit(1)
         
-        
+
+
         # Check if Reference table Exists if not Create Reference table
+        logger.info(f"Checking if Reference Table Exists: {project_id}.ref_{dataset}.{args.get('asset').lower()}")
+        ref_exists = get_table_exists(project_id=project_id, 
+                                      dataset=f'ref_{dataset}', 
+                                      table_name=args.get('asset'), 
+                                      keyfile_path=config_var.get('gcp_creds')
+        )
+        if  int(ref_exists)== 0 or "Error:" in ref_exists:
+            logger.info(f'Reference Table Flag: {ref_exists}, Table Does not exists. Creating Reference table.')
+            create_ref = create_and_load_reference_table(flag=0, 
+                                                         project_id=project_id, 
+                                                         dataset=dataset, 
+                                                         table_name=args.get('asset'), 
+                                                         stg_and_ref_create_table=stg_and_ref_create_table, 
+                                                         mapping_stg_to_ref_query=mapping_stg_to_ref_column_query, 
+                                                         keyfile_path=config_var.get('gcp_creds')
+                                                         )                
+            logger.info('Create Reference table & Load Data Completed.' + '\n' + 'Execution END.')
+        elif int(ref_exists) == 1 and load_type == 'FULL':
+            logger.info(f'Reference Table Flag: {ref_exists}, Table exists. Identified as FULL dataload.')
+            create_ref = create_and_load_reference_table(flag=1, 
+                                                         project_id=project_id, 
+                                                         dataset=dataset, 
+                                                         table_name=args.get('asset'), 
+                                                         stg_and_ref_create_table=stg_and_ref_create_table, 
+                                                         mapping_stg_to_ref_query=mapping_stg_to_ref_column_query, 
+                                                         keyfile_path=config_var.get('gcp_creds')
+                                                         )                
+            logger.info('Drop & Create Reference table, Full dataload Completed.' + '\n' + 'Execution END.')
 
-        # Load External Data to Staging Table
-
-        # Load Staging Data to Reference Table
-
-
+        
+        
         logfilepath = config_var.get('log_path') + '{}_{:%Y_%m_%d}.log'.format(log_domain, datetime.now())
         logfile = config_var.get('log_bucket_workflow_execution_destination') + '{}_{:%Y_%m_%d}.log'.format(log_domain, datetime.now())
      

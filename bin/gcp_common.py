@@ -140,9 +140,8 @@ def get_table_exists(project_id, dataset, table_name, keyfile_path):
         client = bigquery.Client(credentials=credentials, project=credentials.project_id)
 
         query = f'''
-                SELECT COUNT(1) as flag FROM `{project_id}.{dataset}.__TABLES_SUMMARY__` WHERE table_id = '{table_name}';
+                SELECT COUNT(1) as flag FROM `{project_id.lower()}.{dataset.lower()}.__TABLES_SUMMARY__` WHERE table_id = '{table_name}';
                 ''' 
-
         query_job = client.query(query)
 
         # Fetch the results
@@ -390,4 +389,46 @@ def create_and_load_staging_table(project_id, dataset, table_name, stg_and_ref_c
 
         return "SUCCESS"
     except Exception as e:
-        return f"Error: {e}"            
+        return f"Error: {e}"     
+
+
+def create_and_load_reference_table(flag, project_id, dataset, table_name, stg_and_ref_create_table, mapping_stg_to_ref_query, keyfile_path):
+    try:
+        keyfile = keyfile_path
+
+        # Create credentials & Initialize Client
+        credentials = service_account.Credentials.from_service_account_file(keyfile)
+        client = bigquery.Client(credentials=credentials, project=credentials.project_id)
+
+        #flag: 0 table does not exists, 1 = full data load, 2 = incremental data load
+
+        if flag == 0:
+            query = f'''
+                CREATE TABLE IF NOT EXISTS `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}` (
+                {stg_and_ref_create_table}, IS_DELETED BOOL, IS_HARD_DELETE BOOL, DW_CREATE_DATETIME DATETIME, DW_LOAD_DATETIME DATETIME
+                );
+
+                INSERT INTO `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}`
+                SELECT {mapping_stg_to_ref_query}, FALSE AS IS_DELETED, FALSE AS IS_HARD_DELETE, CURRENT_DATETIME AS DW_CREATE_DATETIME, CURRENT_DATETIME AS DW_LOAD_DATETIME FROM `{project_id.lower()}.stg_{dataset.lower()}.{table_name.lower()}`;                
+                '''
+            print(query)
+        elif flag == 1:
+            print("Step 2.2")
+            query = f'''
+                DROP TABLE IF EXISTS `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}`;
+                CREATE TABLE IF NOT EXISTS `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}` (
+                {stg_and_ref_create_table}, IS_DELETED BOOL, IS_HARD_DELETE BOOL, DW_CREATE_DATETIME DATETIME, DW_LOAD_DATETIME DATETIME
+                );
+
+                INSERT INTO `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}`
+                SELECT {mapping_stg_to_ref_query}, FALSE AS IS_DELETED, FALSE AS IS_HARD_DELETE, CURRENT_DATETIME AS DW_CREATE_DATETIME, CURRENT_DATETIME AS DW_LOAD_DATETIME FROM `{project_id.lower()}.stg_{dataset.lower()}.{table_name.lower()}`;                
+                '''             
+        
+        query_job = client.query(query)
+
+        # Fetch the results
+        results = query_job.result()
+
+        return "SUCCESS"
+    except Exception as e:
+        return f"Error: {e}"         
