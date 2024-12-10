@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from config import Config
 from parse_args import parse_args
 from logger import set_logger
-from gcp_common import get_connection_details, get_workflow_action_process_id, set_workflow_action_process_id, update_workflow_action_process_id, get_incremental_date, upload_to_bucket, create_external_table, archive_file
+from gcp_common import get_connection_details, get_column_details, get_workflow_action_process_id, set_workflow_action_process_id, update_workflow_action_process_id, get_incremental_date, upload_to_bucket, create_external_table, archive_file, create_and_load_staging_table
 from requests_common import get_request, get_request_payload
 from encryption_decryption_common import Prpcrypt
 from file_common import response_to_parquet
@@ -124,7 +124,9 @@ def main():
                                                 start=incr_result,
                                                 end=datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ'),
                                                 interval=extra_parameters
-                                                )  
+                                                )
+        
+        # Check Response Data & Write to Parquet  
         if "Error:" in response:
             logger.info(f"{response}")
             update_result = update_workflow_action_process_id(process_id=process_id, execution_status=-1, keyfile_path=config_var.get('gcp_creds'))
@@ -194,10 +196,76 @@ def main():
             logger.info(f'{create_external}')
             update_workflow_action_process_id(process_id=process_id, execution_status=-1, keyfile_path=config_var.get('gcp_creds'))                
             logger.info('Data Ingestion Completed with Errors.' + '\n' + 'Execution END.')
+
+            logfilepath = config_var.get('log_path') + '{}_{:%Y_%m_%d}.log'.format(log_domain, datetime.now())
+            logfile = config_var.get('log_bucket_workflow_execution_destination') + '{}_{:%Y_%m_%d}.log'.format(log_domain, datetime.now())
+
+            # Upload Workflow Execution Log File to GCP Bucket
+            upload_to_bucket(bucket_name=config_var.get('log_bucket'), 
+                             source_file_name=logfilepath,
+                            destination_blob_name=logfile,
+                            keyfile_path=config_var.get('gcp_creds'))
+            sys.exit(1)
+
+
+
+        # Get Column Details from GCP
+        logger.info(f"Querying GCP for Column Details.")
+        column_results = get_column_details(project_id=project_id, dataset=dataset,table_name=args.get('asset'), keyfile_path=config_var.get('gcp_creds'))
+
+        if "Error:" in column_results:
+            logger.info(f'{column_results}')
+            update_workflow_action_process_id(process_id=process_id, execution_status=-1, keyfile_path=config_var.get('gcp_creds'))                
+            logger.info('Data Ingestion Completed with Errors.' + '\n' + 'Execution END.')
+
+            logfilepath = config_var.get('log_path') + '{}_{:%Y_%m_%d}.log'.format(log_domain, datetime.now())
+            logfile = config_var.get('log_bucket_workflow_execution_destination') + '{}_{:%Y_%m_%d}.log'.format(log_domain, datetime.now())
+
+            # Upload Workflow Execution Log File to GCP Bucket
+            upload_to_bucket(bucket_name=config_var.get('log_bucket'), 
+                             source_file_name=logfilepath,
+                            destination_blob_name=logfile,
+                            keyfile_path=config_var.get('gcp_creds'))
+            sys.exit(1)
+
+
+
+        # Assign Data Ingestion Details
+        for key, value in column_results.items():
+            #print(f"Key: {key}, Value: {value}")
+            stg_and_ref_create_table=value['stg_ref_create_table_column_details']  
+            source_to_stg_conversion=value['source_to_stg_conversion_column_details']
+            source_to_stg_column_query=value['source_to_stg_column_query']
+            mapping_stg_to_ref_column_query=value['mapping_stg_to_ref_column_query']
+
+
+        # Drop & Create Staging Table
+        logger.info(f"Creating and loading Staging Table: {project_id}.{dataset}.stg_{args.get('asset').lower()}")
+        create_load_staging = create_and_load_staging_table(
+                                        project_id=project_id, 
+                                        dataset=dataset, 
+                                        table_name=args.get('asset'), 
+                                        stg_and_ref_create_table=stg_and_ref_create_table, 
+                                        source_to_stg_conversion=source_to_stg_conversion, 
+                                        keyfile_path=config_var.get('gcp_creds')
+                                        )
+
+        if "Error:" in create_load_staging:
+            logger.info(f'{create_load_staging}')
+            update_workflow_action_process_id(process_id=process_id, execution_status=-1, keyfile_path=config_var.get('gcp_creds'))                
+            logger.info('Data Ingestion Completed with Errors.' + '\n' + 'Execution END.')
         else:
+            logger.info(f"Create and Load Staging Table: {project_id}.{dataset}.stg_{args.get('asset').lower()}")
             update_workflow_action_process_id(process_id=process_id, execution_status=1, keyfile_path=config_var.get('gcp_creds'))
             logger.info('Data Ingestion Complete.' + '\n' + 'Execution END.')
         
+        
+        # Check if Reference table Exists if not Create Reference table
+
+        # Load External Data to Staging Table
+
+        # Load Staging Data to Reference Table
+
 
         logfilepath = config_var.get('log_path') + '{}_{:%Y_%m_%d}.log'.format(log_domain, datetime.now())
         logfile = config_var.get('log_bucket_workflow_execution_destination') + '{}_{:%Y_%m_%d}.log'.format(log_domain, datetime.now())

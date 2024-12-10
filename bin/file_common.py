@@ -24,9 +24,7 @@ def response_to_parquet(response_data, parquet_filename):
     try:
         # Load response data to DataFrame
         df = pd.DataFrame(response_data['data'])
-
-        print(df)
-        
+       
         # Write the DataFrame to Parquet
         df.to_parquet(f"{parquet_filename}.parquet", engine='pyarrow')  # You can choose 'fastparquet' if preferred
 

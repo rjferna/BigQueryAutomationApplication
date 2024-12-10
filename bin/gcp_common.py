@@ -171,19 +171,6 @@ def get_connection_details(connection_name, table_name, keyfile_path):
         client = bigquery.Client(credentials=credentials, project=credentials.project_id)
 
         query = f'''
-            WITH column_details as (
-            SELECT 
-            source_system,
-            dataset,
-            table_name,
-            STRING_AGG(CONCAT(lower(column_name), ' ', (datatype)), ', ') AS source_column_details,
-            STRING_AGG(lower(column_name)) AS source_column_query,
-            STRING_AGG(CONCAT(lower(mapping_column), ' ', (datatype)), ', ') AS mapping_column_details,
-            STRING_AGG(lower(mapping_column)) AS mapping_column_query
-            FROM `dw-metadata-utilities.metadata_utilities.ingestion_column_details`
-            WHERE table_name = '{table_name}'
-            GROUP BY source_system,  dataset, table_name  
-            )
             SELECT DISTINCT 
             a.connection_name, 
             a.connection_url, 
@@ -206,19 +193,14 @@ def get_connection_details(connection_name, table_name, keyfile_path):
             b.bucket,
             b.bucket_destination,
             b.archive_destination,
-            b.accepted_encoding,
-            c.source_column_details,
-            c.source_column_query,
-            c.mapping_column_details,
-            c.mapping_column_query
+            b.accepted_encoding
             FROM `dw-metadata-utilities.metadata_utilities.ingestion_connection_info` as a
             INNER JOIN `dw-metadata-utilities.metadata_utilities.ingestion_config` as b on a.connection_name = b.connection_name
-            LEFT JOIN column_details as c ON b.table_name = c.table_name
             WHERE 
                 a.connection_name = '{connection_name}'
             AND
                 b.table_name = '{table_name}'
-            ;
+            ; 
             ''' 
 
         # Execute the query
@@ -236,6 +218,48 @@ def get_connection_details(connection_name, table_name, keyfile_path):
         return result_dict
     except Exception as e:
         return f"Error: {e}"    
+    
+def get_column_details(project_id, dataset, table_name, keyfile_path):
+    try:
+        keyfile = keyfile_path
+
+        # Create credentials & Initialze Client
+        credentials = service_account.Credentials.from_service_account_file(keyfile)
+        client = bigquery.Client(credentials=credentials, project=credentials.project_id)
+
+        query = f'''
+            SELECT 
+            table_name,
+            STRING_AGG(CONCAT(lower(mapping_column), ' ', (datatype)), ', ') AS stg_ref_create_table_column_details,  
+            STRING_AGG(CONCAT('SAFE_CAST(' ,lower(column_name),' AS ',(datatype),') AS ',lower(mapping_column)), ',') AS source_to_stg_conversion_column_details,
+            STRING_AGG(lower(column_name)) AS source_to_stg_column_query,
+            STRING_AGG(lower(mapping_column)) AS mapping_stg_to_ref_column_query
+            FROM `dw-metadata-utilities.metadata_utilities.ingestion_column_details`
+            WHERE 
+                project_id = '{project_id}'
+            AND
+                dataset = '{dataset}'
+            AND
+                table_name = '{table_name}'
+            GROUP BY table_name
+            ; 
+            ''' 
+
+        # Execute the query
+        query_job = client.query(query)
+
+        # Fetch the results
+        results = query_job.result()
+
+        # Store results in a dictionary 
+        result_dict = {} 
+        for row in results: 
+            row_dict = {key: row[key] for key in row.keys()} 
+            result_dict[row[0]] = row_dict # Using the first column's value as the dictionary key # Print the result
+
+        return result_dict
+    except Exception as e:
+        return f"Error: {e}"     
 
 def get_workflow_action_process_id(keyfile_path):
     try:
@@ -325,7 +349,7 @@ def create_external_table(project_id, dataset, table_name, bucket_destination_na
         client = bigquery.Client(credentials=credentials, project=credentials.project_id)
 
         query = f'''
-                CREATE OR REPLACE EXTERNAL TABLE `{project_id.lower()}.{dataset.lower()}.{table_name.lower()}`
+                CREATE OR REPLACE EXTERNAL TABLE `{project_id.lower()}.external_{dataset.lower()}.{table_name.lower()}`
                 OPTIONS (
                 format = '{file_format}',
                 uris = ['gs://{bucket_destination_name}']
@@ -339,4 +363,31 @@ def create_external_table(project_id, dataset, table_name, bucket_destination_na
 
         return "SUCCESS"
     except Exception as e:
-        return f"Error: {e}"     
+        return f"Error: {e}"
+
+def create_and_load_staging_table(project_id, dataset, table_name, stg_and_ref_create_table, source_to_stg_conversion, keyfile_path):
+    try:
+        keyfile = keyfile_path
+
+        # Create credentials & Initialize Client
+        credentials = service_account.Credentials.from_service_account_file(keyfile)
+        client = bigquery.Client(credentials=credentials, project=credentials.project_id)
+
+        query = f'''
+                DROP TABLE IF EXISTS `{project_id.lower()}.stg_{dataset.lower()}.{table_name.lower()}`;
+                CREATE TABLE IF NOT EXISTS `{project_id.lower()}.stg_{dataset.lower()}.{table_name.lower()}` (
+                {stg_and_ref_create_table}
+                );
+
+                INSERT INTO `{project_id.lower()}.stg_{dataset.lower()}.{table_name.lower()}`
+                SELECT {source_to_stg_conversion} FROM `{project_id.lower()}.external_{dataset.lower()}.{table_name.lower()}`;                
+                ''' 
+        
+        query_job = client.query(query)
+
+        # Fetch the results
+        results = query_job.result()
+
+        return "SUCCESS"
+    except Exception as e:
+        return f"Error: {e}"            
