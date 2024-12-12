@@ -179,7 +179,7 @@ def main():
                          keyfile_path=config_var.get('gcp_creds') )
             sys.exit(1)
 
-        print(bucket + bucket_destination + args.get('asset') + '.' + file_format.lower())
+        print(f'Target Bucket: {bucket + bucket_destination + args.get('asset') + '.' + file_format.lower()}')
 
         # Create External Table
         logger.info(f"Creating External Table: {project_id}.{dataset}.{args.get('asset').lower()}")
@@ -274,7 +274,11 @@ def main():
                                       table_name=args.get('asset'), 
                                       keyfile_path=config_var.get('gcp_creds')
         )
-        if  int(ref_exists)== 0 or "Error:" in ref_exists:
+        if  "Error:" in ref_exists:
+            logger.info(f'{ref_exists}')
+            update_workflow_action_process_id(process_id=process_id, execution_status=-1, keyfile_path=config_var.get('gcp_creds'))                
+            logger.info('Data Ingestion Completed with Errors.' + '\n' + 'Execution END.')                
+        elif  int(ref_exists) == 0:
             logger.info(f'Reference Table Flag: {ref_exists}, Table Does not exists. Creating Reference table.')
             create_ref = create_and_load_reference_table(flag=0, 
                                                          project_id=project_id, 
@@ -284,7 +288,7 @@ def main():
                                                          mapping_stg_to_ref_query=mapping_stg_to_ref_column_query, 
                                                          keyfile_path=config_var.get('gcp_creds')
                                                          )                
-            logger.info('Create Reference table & Load Data Completed.' + '\n' + 'Execution END.')
+            logger.info(f'Create Reference table & Load Data: {create_ref}.' + '\n' + 'Execution END.')
         elif int(ref_exists) == 1 and load_type == 'FULL':
             logger.info(f'Reference Table Flag: {ref_exists}, Table exists. Identified as FULL dataload.')
             create_ref = create_and_load_reference_table(flag=1, 
@@ -295,7 +299,7 @@ def main():
                                                          mapping_stg_to_ref_query=mapping_stg_to_ref_column_query, 
                                                          keyfile_path=config_var.get('gcp_creds')
                                                          )                
-            logger.info('Drop & Create Reference table, Full dataload Completed.' + '\n' + 'Execution END.')
+            logger.info(f'Drop & Create Reference table: {create_ref}, Full dataload Completed.' + '\n' + 'Execution END.')
 
         
         

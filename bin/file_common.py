@@ -1,7 +1,7 @@
 import csv
 import json
 import pandas as pd
-from flatten_dict import flatten
+
 
 def dict_to_csv(my_dict, csv_filename):
     try:

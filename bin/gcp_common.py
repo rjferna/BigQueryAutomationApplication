@@ -411,9 +411,7 @@ def create_and_load_reference_table(flag, project_id, dataset, table_name, stg_a
                 INSERT INTO `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}`
                 SELECT {mapping_stg_to_ref_query}, FALSE AS IS_DELETED, FALSE AS IS_HARD_DELETE, CURRENT_DATETIME AS DW_CREATE_DATETIME, CURRENT_DATETIME AS DW_LOAD_DATETIME FROM `{project_id.lower()}.stg_{dataset.lower()}.{table_name.lower()}`;                
                 '''
-            print(query)
         elif flag == 1:
-            print("Step 2.2")
             query = f'''
                 DROP TABLE IF EXISTS `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}`;
                 CREATE TABLE IF NOT EXISTS `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}` (
