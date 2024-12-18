@@ -67,7 +67,6 @@ def archive_file(source_bucket_name, source_file_name, archive_bucket_name, arch
             archive_destination + new_name
         )
 
-        # Delete the original blob from the source bucket
         source_file.delete()
 
         return 'SUCCESS'
@@ -114,10 +113,8 @@ def get_incremental_date(date, project_id,dataset,table_name, keyfile_path):
         # Execute the query
         query_job = client.query(query)
 
-        # Fetch the results
         results = query_job.result()
 
-        # Store results in a dictionary 
         result_dict = {} 
         for row in results: 
             row_dict = {key: row[key] for key in row.keys()} 
@@ -156,6 +153,9 @@ def get_table_exists(project_id, dataset, table_name, keyfile_path):
         # Identify Data Ingestion Workflow
         for key, value in result_dict.items(): 
             flag= value['flag']
+
+        print(flag)
+        print(type(flag))
 
         return flag
     except Exception as e:
@@ -205,10 +205,8 @@ def get_connection_details(connection_name, table_name, keyfile_path):
         # Execute the query
         query_job = client.query(query)
 
-        # Fetch the results
         results = query_job.result()
 
-        # Store results in a dictionary 
         result_dict = {} 
         for row in results: 
             row_dict = {key: row[key] for key in row.keys()} 
@@ -247,14 +245,12 @@ def get_column_details(project_id, dataset, table_name, keyfile_path):
         # Execute the query
         query_job = client.query(query)
 
-        # Fetch the results
         results = query_job.result()
 
-        # Store results in a dictionary 
         result_dict = {} 
         for row in results: 
             row_dict = {key: row[key] for key in row.keys()} 
-            result_dict[row[0]] = row_dict # Using the first column's value as the dictionary key # Print the result
+            result_dict[row[0]] = row_dict 
 
         return result_dict
     except Exception as e:
@@ -271,19 +267,16 @@ def get_workflow_action_process_id(keyfile_path):
         query = '''
                 SELECT MAX(process_id) + 1 as process_id FROM `dw-metadata-utilities.metadata_utilities.workflow_action_history`;
                 ''' 
-
+        # Execute the query
         query_job = client.query(query)
-
-        # Fetch the results
+ 
         results = query_job.result()
 
-        # Store results in a dictionary 
         result_dict = {} 
         for row in results: 
             row_dict = {key: row[key] for key in row.keys()} 
-            result_dict[row[0]] = row_dict # Using the first column's value as the dictionary key # Print the results
+            result_dict[row[0]] = row_dict 
     
-        # Identify Data Ingestion Workflow
         for key, value in result_dict.items(): 
             process_id= value['process_id']
 
@@ -308,7 +301,6 @@ def set_workflow_action_process_id(process_id, connection_name, dataset, table_n
         # Execute the query
         query_job = client.query(query)
 
-        # Wait for the query to complete
         query_job.result()
 
         return "SUCCESS"
@@ -329,10 +321,8 @@ def update_workflow_action_process_id(process_id, execution_status, keyfile_path
             WHERE process_id = {process_id}
             ''' 
 
-        # Execute the query
         query_job = client.query(query)
 
-        # Fetch the results
         results = query_job.result()
 
         return "SUCCESS"
@@ -357,7 +347,6 @@ def create_external_table(project_id, dataset, table_name, bucket_destination_na
 
         query_job = client.query(query)
 
-        # Fetch the results
         results = query_job.result()
 
         return "SUCCESS"
@@ -384,7 +373,6 @@ def create_and_load_staging_table(project_id, dataset, table_name, stg_and_ref_c
         
         query_job = client.query(query)
 
-        # Fetch the results
         results = query_job.result()
 
         return "SUCCESS"
@@ -424,7 +412,6 @@ def create_and_load_reference_table(flag, project_id, dataset, table_name, stg_a
         
         query_job = client.query(query)
 
-        # Fetch the results
         results = query_job.result()
 
         return "SUCCESS"

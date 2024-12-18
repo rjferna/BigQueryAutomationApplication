@@ -7,7 +7,10 @@
     * pycryptodome==3.21.0
 
 2. GCP Account (Free trial is offered)
-    * Create a Service Account and Generate a keyfile with the required permissions
+    * Create a BigQuery Project for Metadata.
+    * Create bucket for Metadata project
+    * Create a Service Account for Metadata Project
+    * Generate a keyfile Metadata Project
 
 3. CoinCap API Key
     * To Generate API key refer to: <a href="https://docs.coincap.io/#intro" target="_blank">CoinCap - Documentation</a> 
@@ -18,10 +21,10 @@ The goal of this project repository is to build an application framework to supp
 
 ## Bigquery Metadata Utility Objects
 
-The Framework is utilizing a handful of BigQuery tables in the `dw-metadata-utilites` project which holds a dataset called `metadata-utilities`.
-A user will enter data source connection information, data ingestionsion configuration, and column details into the SQL tables. The user can then execute the 
-python controller script with the required data ingestion arguements which help identify the data source we are accessing and data we are attempting to extract. 
-The controller script will then pull the required data ingestion details from the `metadata-utilities` tables and begin extraction from the data source, writing 
+The automation is utilizing a handful of BigQuery tables in the `dw-metadata-utilites` project which holds the dataset `metadata-utilities`.
+A user will enter data source connection information, data ingestions configuration, and column details into the SQL tables. The user can then execute the 
+python controller script with the required data ingestion arguements which help identify the source we are accessing for data extraction. The controller 
+script will then pull the required data ingestion details from the `metadata-utilities` tables and begin extraction from the data source, writing 
 the data into the target GCP storage.
 
 As the controller script runs, a log file is generated detailing each action taken by the controller script. As well as the Start & End datetimestamps of the workflow 
@@ -49,6 +52,13 @@ The Ingestion Column Details table contains column details for the data that is 
 **WORKFLOW_ACTION_HISTORY**
 The Workflow Action History table contains an audit log of all workflow actions including connection_name, Start & End datetimestamps and the Workflow Status for each data 
 ingestion workflow that is executed.
+
+| Interpretation | Status |
+|----------------|--------|
+| In-Progress    | 0      |
+| Complete       | 1      |
+| Failed         | -1     |
+
 
 ![alt text](workflow_action_history.png)
 
@@ -90,15 +100,31 @@ Looking into additional sources I can use to flesh out this project.
 
 ### Example Data Ingestion Executions:
 
-* **Crypto Asset data:** python3 controller.py -s COINCAP_ASSET -a EXTERNAL_COINCAP_ASSETS -l info
+* **Crypto Asset data:** 
+``` 
+python3 controller.py -s COINCAP_ASSET -a EXTERNAL_COINCAP_ASSETS -l info 
+```
 
-* **BITCOIN ASSET HISTORY:** python3 controller.py -s COINCAP_BITCOIN_HISTORY -a EXTERNAL_COINCAP_BITCOIN_HISTORY -l info
 
-* **CRYPTO EXCHANGE DATA:** python3 controller.py -s COINCAP_EXCHANGES -a EXTERNAL_COINCAP_EXCHANGES -l info
+* **BITCOIN ASSET HISTORY:** 
+```
+python3 controller.py -s COINCAP_BITCOIN_HISTORY -a EXTERNAL_COINCAP_BITCOIN_HISTORY -l info
+```
 
-* **CRYPTO COIN RATES:** python3 controller.py -s COINCAP_RATES -a EXTERNAL_COINCAP_RATES -l info
+* **CRYPTO EXCHANGE DATA:** 
+```
+python3 controller.py -s COINCAP_EXCHANGES -a EXTERNAL_COINCAP_EXCHANGES -l info
+```
 
-* **CRYPTO MARKETS DATA:** python3 controller.py -s COINCAP_MARKETS -a EXTERNAL_COINCAP_MARKETS -l info
+* **CRYPTO COIN RATES:** 
+```
+python3 controller.py -s COINCAP_RATES -a EXTERNAL_COINCAP_RATES -l info
+```
+
+* **CRYPTO MARKETS DATA:** 
+```
+python3 controller.py -s COINCAP_MARKETS -a EXTERNAL_COINCAP_MARKETS -l info
+```
 
 ### TODO: 
 * ~~Upload data to respective GCP Bucket~~ 

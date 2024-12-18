@@ -266,6 +266,7 @@ def main():
             sys.exit(1)
         
 
+        #**********************************************  Work in progress **********************************************#
 
         # Check if Reference table Exists if not Create Reference table
         logger.info(f"Checking if Reference Table Exists: {project_id}.ref_{dataset}.{args.get('asset').lower()}")
@@ -274,34 +275,23 @@ def main():
                                       table_name=args.get('asset'), 
                                       keyfile_path=config_var.get('gcp_creds')
         )
-        if  "Error:" in ref_exists:
+        if  type(ref_exists) == str:
             logger.info(f'{ref_exists}')
             update_workflow_action_process_id(process_id=process_id, execution_status=-1, keyfile_path=config_var.get('gcp_creds'))                
             logger.info('Data Ingestion Completed with Errors.' + '\n' + 'Execution END.')                
-        elif  int(ref_exists) == 0:
-            logger.info(f'Reference Table Flag: {ref_exists}, Table Does not exists. Creating Reference table.')
-            create_ref = create_and_load_reference_table(flag=0, 
+        else:
+           logger.info(f'Reference Table Flag: {ref_exists}, Table exists. Identified as FULL dataload.')
+           create_ref = create_and_load_reference_table(flag=1, 
                                                          project_id=project_id, 
                                                          dataset=dataset, 
                                                          table_name=args.get('asset'), 
                                                          stg_and_ref_create_table=stg_and_ref_create_table, 
                                                          mapping_stg_to_ref_query=mapping_stg_to_ref_column_query, 
                                                          keyfile_path=config_var.get('gcp_creds')
-                                                         )                
-            logger.info(f'Create Reference table & Load Data: {create_ref}.' + '\n' + 'Execution END.')
-        elif int(ref_exists) == 1 and load_type == 'FULL':
-            logger.info(f'Reference Table Flag: {ref_exists}, Table exists. Identified as FULL dataload.')
-            create_ref = create_and_load_reference_table(flag=1, 
-                                                         project_id=project_id, 
-                                                         dataset=dataset, 
-                                                         table_name=args.get('asset'), 
-                                                         stg_and_ref_create_table=stg_and_ref_create_table, 
-                                                         mapping_stg_to_ref_query=mapping_stg_to_ref_column_query, 
-                                                         keyfile_path=config_var.get('gcp_creds')
-                                                         )                
-            logger.info(f'Drop & Create Reference table: {create_ref}, Full dataload Completed.' + '\n' + 'Execution END.')
-
+                                                         )
+           logger.info(f'Drop & Create Reference table: {create_ref}, Full dataload Completed.' + '\n' + 'Execution END.')
         
+        update_workflow_action_process_id(process_id=process_id, execution_status=1, keyfile_path=config_var.get('gcp_creds'))
         
         logfilepath = config_var.get('log_path') + '{}_{:%Y_%m_%d}.log'.format(log_domain, datetime.now())
         logfile = config_var.get('log_bucket_workflow_execution_destination') + '{}_{:%Y_%m_%d}.log'.format(log_domain, datetime.now())

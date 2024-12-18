@@ -38,13 +38,14 @@ class Config:
         self.cp.write(open(self.config_file, 'w'))
     
     def get(self, section_name):
-        '''Return all the configured attributes for section {section_name}, including the attributes in COMMON section
+        '''
+        Returns all the configured attributes for section {section_name}, including the attributes in COMMON section
         
         Args: section_name: str. The section name of the configuration.
         Returns: 
             dict. All the attributes configured in section {section_name} and COMMON. 
-            If am attribute presents in both the sections, the non-empty one will be return, 
-            if both are non-empty ones, return the section one. Other wise return None
+            If a attribute is present in both sections, the non-empty one will be returned, 
+            if both are non-empty, return the section one. Other wise return None
         '''
         
         common = self._get_common()
