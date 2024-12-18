@@ -16,13 +16,12 @@ The goal of this project repository is to build an application framework to supp
 ## Bigquery Metadata Utility Objects
 
 The automation is utilizing a handful of BigQuery tables in the `dw-metadata-utilites` project which holds the dataset `metadata-utilities`.
-A user will enter data source connection information, data ingestions configuration, and column details into the SQL tables. The user can then execute the 
-python controller script with the required data ingestion arguements which help identify the source we are accessing for data extraction. The controller 
-script will then pull the required data ingestion details from the `metadata-utilities` tables and begin extraction from the data source, writing 
-the data into the target GCP storage.
+A user will enter data source connection information, table ingestion configurations, and column details into the SQL tables. lastly, the user executes the 
+python controller script with the required data ingestion arguements which help identify the source we are accessing for extraction. 
 
-As the controller script runs, a log file is generated detailing each action taken by the controller script. As well as the Start & End datetimestamps of the workflow 
-execution which is recorded in the `workflow_action_history` table with a unique `process_id` for each job execution.
+The controller script will then pull the required data ingestion details from the `metadata-utilities` tables and begin extraction from the data source. Writing 
+the data into the target GCP storage. As the controller script runs, a log file is generated detailing each action taken by the controller script. As well as the 
+Start & End datetimestamps of the workflow execution which is recorded in the `workflow_action_history` table with a unique `process_id` for each job execution.
 
 **ER Diagram:**
 ![alt text](metadata_utilities.png)

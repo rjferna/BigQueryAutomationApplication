@@ -137,7 +137,7 @@ def get_table_exists(project_id, dataset, table_name, keyfile_path):
         client = bigquery.Client(credentials=credentials, project=credentials.project_id)
 
         query = f'''
-                SELECT COUNT(1) as flag FROM `{project_id.lower()}.{dataset.lower()}.__TABLES_SUMMARY__` WHERE table_id = '{table_name}';
+                SELECT COUNT(1) as flag FROM `{project_id.lower()}.{dataset.lower()}.__TABLES_SUMMARY__` WHERE table_id = '{table_name.lower()}';
                 ''' 
         query_job = client.query(query)
 

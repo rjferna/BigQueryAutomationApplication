@@ -83,7 +83,7 @@ def main():
 
 
         # Identify Data Ingestion Workflow type
-        if ingestion_type == 'REQUEST':
+        if ingestion_type == "REQUEST":
             logger.info("Set Workflow Action History Execution Record")
             workflow_result = set_workflow_action_process_id(process_id=process_id, 
                                                              connection_name=connection_name, 
@@ -98,7 +98,7 @@ def main():
                                         url=connection_url,
                                         encoding=accepted_encoding
                                         )
-        if ingestion_type == 'REQUEST_PAYLOAD':
+        if ingestion_type == "REQUEST_PAYLOAD":
             logger.info("Set Workflow Action History Execution Record")
             workflow_result = set_workflow_action_process_id(process_id=process_id, 
                                                              connection_name=connection_name, 
@@ -109,14 +109,14 @@ def main():
                                                              )
             logger.info(f"Workflow Action Result: {workflow_result}")
 
-            logger.info('Get last incremental loadtime')
+            logger.info("Get last incremental loadtime")
             incr_result = get_incremental_date(date=incremental_date_column, 
                                                project_id=project_id,
                                                dataset=dataset,
                                                table_name=args.get('asset'), 
                                                keyfile_path=config_var.get('gcp_creds')
                                                )
-            logger.info(f'Data collection start datetime: {incr_result}')
+            logger.info(f"Data collection start datetime: {incr_result}")
 
             response = get_request_payload(key=pc.decrypt(password_encrypted),
                                                 url=connection_url,
@@ -130,22 +130,22 @@ def main():
         if "Error:" in response:
             logger.info(f"{response}")
             update_result = update_workflow_action_process_id(process_id=process_id, execution_status=-1, keyfile_path=config_var.get('gcp_creds'))
-            logger.info(f'Error: Updating Workflow Action Record: {update_result}')
+            logger.info(f"Error: Updating Workflow Action Record: {update_result}")
         elif response is None:
-            logger.info('Error: None Object returned')
+            logger.info("Error: None Object returned")
             update_result = update_workflow_action_process_id(process_id=process_id, execution_status=-1, keyfile_path=config_var.get('gcp_creds'))
-            logger.info(f'Error: Updating Workflow Action Record: {update_result}')
+            logger.info(f"Error: Updating Workflow Action Record: {update_result}")
         else:
-            logger.info(f'Response Type: {type(response)}')
+            logger.info(f"Response Type: {type(response)}")
             response_file = response_to_parquet(response_data=response, 
                                                 parquet_filename=config_var.get('file_path') + args.get('asset')
                                                 ) 
-            logger.info(f'Writing response data to flat file')
+            logger.info(f"Writing response data to file")
 
 
 
         # Upload Data to GCP Bucket
-        logger.info(f'Checking to see if file exists: {bucket_destination + args.get('asset') + '.' + file_format.lower()}') 
+        logger.info(f"Checking to see if file exists: {bucket_destination + args.get('asset') + '.' + file_format.lower()}") 
         archive_response = archive_file(source_bucket_name=bucket, 
                                         source_file_name=bucket_destination + args.get('asset') + '.' + file_format.lower(), 
                                         archive_bucket_name=bucket,
@@ -154,20 +154,20 @@ def main():
                                         keyfile_path=config_var.get('gcp_creds')
                                         )
         if "Error:" in archive_response:
-            logger.info(f'Error: {archive_response}')
+            logger.info(f"Error: {archive_response}")
         else:
-            logger.info(f'Archive Status: {archive_response}')
+            logger.info(f"Archive Status: {archive_response}")
 
-        logger.info(f'Uploading Data to Bucket Path: {bucket_destination}{args.get('asset')}.{file_format.lower()}')
+        logger.info(f"Uploading Data to Bucket Path: {bucket_destination}{args.get('asset')}.{file_format.lower()}")
         upload_data = upload_to_bucket(bucket_name=bucket, 
                                        source_file_name=response_file, 
                                        destination_blob_name=bucket_destination + args.get('asset') + '.' + file_format.lower(), 
                                        keyfile_path=config_var.get('gcp_creds')
                                        )
         if "Error:" in upload_data:
-            logger.info(f'{upload_data}')
+            logger.info(f"{upload_data}")
             update_workflow_action_process_id(process_id=process_id, execution_status=-1, keyfile_path=config_var.get('gcp_creds'))
-            logger.info('Data Ingestion Completed with Errors.' + '\n' + 'Execution END.')
+            logger.info("Data Ingestion Completed with Errors." + '\n' + "Execution END.")
 
             logfilepath = config_var.get('log_path') + '{}_{:%Y_%m_%d}.log'.format(log_domain, datetime.now())
             logfile = config_var.get('log_bucket_workflow_execution_destination') + '{}_{:%Y_%m_%d}.log'.format(log_domain, datetime.now())
@@ -194,7 +194,7 @@ def main():
         if "Error:" in create_external:
             logger.info(f'{create_external}')
             update_workflow_action_process_id(process_id=process_id, execution_status=-1, keyfile_path=config_var.get('gcp_creds'))                
-            logger.info('Data Ingestion Completed with Errors.' + '\n' + 'Execution END.')
+            logger.info("Data Ingestion Completed with Errors." + '\n' + "Execution END.")
 
             logfilepath = config_var.get('log_path') + '{}_{:%Y_%m_%d}.log'.format(log_domain, datetime.now())
             logfile = config_var.get('log_bucket_workflow_execution_destination') + '{}_{:%Y_%m_%d}.log'.format(log_domain, datetime.now())
@@ -215,7 +215,7 @@ def main():
         if "Error:" in column_results:
             logger.info(f'{column_results}')
             update_workflow_action_process_id(process_id=process_id, execution_status=-1, keyfile_path=config_var.get('gcp_creds'))                
-            logger.info('Data Ingestion Completed with Errors.' + '\n' + 'Execution END.')
+            logger.info("Data Ingestion Completed with Errors." + '\n' + "Execution END.")
 
             logfilepath = config_var.get('log_path') + '{}_{:%Y_%m_%d}.log'.format(log_domain, datetime.now())
             logfile = config_var.get('log_bucket_workflow_execution_destination') + '{}_{:%Y_%m_%d}.log'.format(log_domain, datetime.now())
@@ -252,7 +252,7 @@ def main():
         if "Error:" in create_load_staging:
             logger.info(f'{create_load_staging}')
             update_workflow_action_process_id(process_id=process_id, execution_status=-1, keyfile_path=config_var.get('gcp_creds'))                
-            logger.info('Data Ingestion Completed with Errors.' + '\n' + 'Execution END.')
+            logger.info("Data Ingestion Completed with Errors." + '\n' + "Execution END.")
 
             logfilepath = config_var.get('log_path') + '{}_{:%Y_%m_%d}.log'.format(log_domain, datetime.now())
             logfile = config_var.get('log_bucket_workflow_execution_destination') + '{}_{:%Y_%m_%d}.log'.format(log_domain, datetime.now())
@@ -277,9 +277,9 @@ def main():
         if  type(ref_exists) == str:
             logger.info(f'{ref_exists}')
             update_workflow_action_process_id(process_id=process_id, execution_status=-1, keyfile_path=config_var.get('gcp_creds'))                
-            logger.info('Data Ingestion Completed with Errors.' + '\n' + 'Execution END.')                
+            logger.info("Data Ingestion Completed with Errors." + '\n' + "Execution END.")
         elif ref_exists == 0:
-           logger.info(f'Reference Table Flag: {ref_exists}, Table does not exists. Creating table & loading in staging data.')
+           logger.info(f"Reference Table Flag: {ref_exists}. Table does not exists, Creating table & loading in staging data.")
            create_ref = create_and_load_reference_table(flag=1, 
                                                          project_id=project_id, 
                                                          dataset=dataset, 
@@ -289,9 +289,9 @@ def main():
                                                          mapping_stg_to_ref_query=mapping_stg_to_ref_column_query, 
                                                          keyfile_path=config_var.get('gcp_creds')
                                                          )
-           logger.info(f'Drop & Create Reference table: {create_ref}, Full dataload Completed.' + '\n' + 'Execution END.')
-        elif ref_exists == 1 and load_type == 'FULL':
-           logger.info(f'Reference Table Flag: {ref_exists}, Table exists, Data load type is {load_type} Drop & Creating table and loading in staging data.')
+           logger.info(f"Drop & Create Reference table: {create_ref}. Full dataload Completed." + '\n' + "Execution END.")
+        elif ref_exists == 1 and load_type == "FULL":
+           logger.info(f"Reference Table Flag: {ref_exists} Table exists. Data load type: {load_type}. Drop & Creating table and full refresh.")
            create_ref = create_and_load_reference_table(flag=1, 
                                                          project_id=project_id, 
                                                          dataset=dataset, 
@@ -301,9 +301,9 @@ def main():
                                                          mapping_stg_to_ref_query=mapping_stg_to_ref_column_query, 
                                                          keyfile_path=config_var.get('gcp_creds')
                                                          )
-           logger.info(f'Drop & Create Reference table: {create_ref}, Full dataload Completed.' + '\n' + 'Execution END.')
-        elif ref_exists == 1 and load_type == 'INCR':
-           logger.info(f'Reference Table Flag: {ref_exists}, Table exists, Data load type is {load_type}. Performing Upsert into target ref table.')
+           logger.info(f"Drop & Create Reference table: {create_ref}. Full dataload Completed." + '\n' + "Execution END.")
+        elif ref_exists == 1 and load_type == "INCR":
+           logger.info(f"Reference Table Flag: {ref_exists} Table exists. Data load type: {load_type}. Begin Incremental Data Load.")
            create_ref = create_and_load_reference_table(flag=1, 
                                                          project_id=project_id, 
                                                          dataset=dataset, 
@@ -313,12 +313,12 @@ def main():
                                                          mapping_stg_to_ref_query=mapping_stg_to_ref_column_query, 
                                                          keyfile_path=config_var.get('gcp_creds')
                                                          )
-           logger.info(f'Incremental Data Load to Reference table: {create_ref}, Completed.' + '\n' + 'Execution END.')
+           logger.info(f"Incremental Data Load to Reference table: {create_ref} Completed." + '\n' + "Execution END.")
         
         if "Error:" in create_ref:
             logger.info(f'{create_ref}')
             update_workflow_action_process_id(process_id=process_id, execution_status=-1, keyfile_path=config_var.get('gcp_creds'))                
-            logger.info('Data Ingestion Completed with Errors.' + '\n' + 'Execution END.')
+            logger.info("Data Ingestion Completed with Errors." + '\n' + "Execution END.")
         
         update_workflow_action_process_id(process_id=process_id, execution_status=1, keyfile_path=config_var.get('gcp_creds'))
         
