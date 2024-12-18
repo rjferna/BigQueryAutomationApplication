@@ -15,7 +15,7 @@ def set_logger(log_level, log_domain, print_log=True, log_path = None):
     if not os.path.exists(log_path):
         os.makedirs(log_path)
     file_name = os.path.join(log_path, '{}_{:%Y_%m_%d}.log'.format(log_domain, datetime.now()))
-    print("The log file: {}".format(file_name))
+    #print("The log file: {}".format(file_name))
     file_handler = logging.FileHandler(file_name)
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)

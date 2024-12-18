@@ -70,7 +70,7 @@ def main():
 
 
         # Get Process_Id from GCP workflow_action_history 
-        logger.info(f"Get Process_ID From GCP Worflow Action History.")
+        logger.info(f"Get Process_ID From Worflow Action History.")
         process_id = get_workflow_action_process_id(keyfile_path=config_var.get('gcp_creds'))
         logger.info(f"Output: ({process_id}).")
 
@@ -139,7 +139,7 @@ def main():
             logger.info(f'Response Type: {type(response)}')
             response_file = response_to_parquet(response_data=response, 
                                                 parquet_filename=config_var.get('file_path') + args.get('asset')
-                                                )  #+ config_var.get('file_name'))
+                                                ) 
             logger.info(f'Writing response data to flat file')
 
 
@@ -179,8 +179,7 @@ def main():
                          keyfile_path=config_var.get('gcp_creds') )
             sys.exit(1)
 
-        print(f'Target Bucket: {bucket + bucket_destination + args.get('asset') + '.' + file_format.lower()}')
-
+        
         # Create External Table
         logger.info(f"Creating External Table: {project_id}.{dataset}.{args.get('asset').lower()}")
         create_external = create_external_table(
@@ -279,17 +278,47 @@ def main():
             logger.info(f'{ref_exists}')
             update_workflow_action_process_id(process_id=process_id, execution_status=-1, keyfile_path=config_var.get('gcp_creds'))                
             logger.info('Data Ingestion Completed with Errors.' + '\n' + 'Execution END.')                
-        else:
-           logger.info(f'Reference Table Flag: {ref_exists}, Table exists. Identified as FULL dataload.')
+        elif ref_exists == 0:
+           logger.info(f'Reference Table Flag: {ref_exists}, Table does not exists. Creating table & loading in staging data.')
            create_ref = create_and_load_reference_table(flag=1, 
                                                          project_id=project_id, 
                                                          dataset=dataset, 
                                                          table_name=args.get('asset'), 
+                                                         load_type=load_type,
                                                          stg_and_ref_create_table=stg_and_ref_create_table, 
                                                          mapping_stg_to_ref_query=mapping_stg_to_ref_column_query, 
                                                          keyfile_path=config_var.get('gcp_creds')
                                                          )
            logger.info(f'Drop & Create Reference table: {create_ref}, Full dataload Completed.' + '\n' + 'Execution END.')
+        elif ref_exists == 1 and load_type == 'FULL':
+           logger.info(f'Reference Table Flag: {ref_exists}, Table exists, Data load type is {load_type} Drop & Creating table and loading in staging data.')
+           create_ref = create_and_load_reference_table(flag=1, 
+                                                         project_id=project_id, 
+                                                         dataset=dataset, 
+                                                         table_name=args.get('asset'),
+                                                         load_type=load_type, 
+                                                         stg_and_ref_create_table=stg_and_ref_create_table, 
+                                                         mapping_stg_to_ref_query=mapping_stg_to_ref_column_query, 
+                                                         keyfile_path=config_var.get('gcp_creds')
+                                                         )
+           logger.info(f'Drop & Create Reference table: {create_ref}, Full dataload Completed.' + '\n' + 'Execution END.')
+        elif ref_exists == 1 and load_type == 'INCR':
+           logger.info(f'Reference Table Flag: {ref_exists}, Table exists, Data load type is {load_type}. Performing Upsert into target ref table.')
+           create_ref = create_and_load_reference_table(flag=1, 
+                                                         project_id=project_id, 
+                                                         dataset=dataset, 
+                                                         table_name=args.get('asset'),
+                                                         load_type=load_type, 
+                                                         stg_and_ref_create_table=stg_and_ref_create_table, 
+                                                         mapping_stg_to_ref_query=mapping_stg_to_ref_column_query, 
+                                                         keyfile_path=config_var.get('gcp_creds')
+                                                         )
+           logger.info(f'Incremental Data Load to Reference table: {create_ref}, Completed.' + '\n' + 'Execution END.')
+        
+        if "Error:" in create_ref:
+            logger.info(f'{create_ref}')
+            update_workflow_action_process_id(process_id=process_id, execution_status=-1, keyfile_path=config_var.get('gcp_creds'))                
+            logger.info('Data Ingestion Completed with Errors.' + '\n' + 'Execution END.')
         
         update_workflow_action_process_id(process_id=process_id, execution_status=1, keyfile_path=config_var.get('gcp_creds'))
         

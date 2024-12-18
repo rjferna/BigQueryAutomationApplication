@@ -15,7 +15,6 @@ def get_request(key, url, encoding):
     base_url = url
     accepted_encoding = encoding
 
-    #print(base_url)
 
     headers = {
         'Accept-Encoding': accepted_encoding, # Enables Compression
@@ -48,10 +47,10 @@ def get_request_payload(key, url, encoding, start, end, interval):
         return None
     
     param = {
-        #'Accept-Encoding': accepted_encoding, # Enables Compression
+        'Accept-Encoding': accepted_encoding, # Enables Compression
         'start': start_date,
         'end': end_date,
-        'interval': interval #
+        'interval': interval
     }
 
     response = requests.get(base_url, params=param)

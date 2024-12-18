@@ -154,9 +154,6 @@ def get_table_exists(project_id, dataset, table_name, keyfile_path):
         for key, value in result_dict.items(): 
             flag= value['flag']
 
-        print(flag)
-        print(type(flag))
-
         return flag
     except Exception as e:
         return f"Error: {e}"    
@@ -380,7 +377,7 @@ def create_and_load_staging_table(project_id, dataset, table_name, stg_and_ref_c
         return f"Error: {e}"     
 
 
-def create_and_load_reference_table(flag, project_id, dataset, table_name, stg_and_ref_create_table, mapping_stg_to_ref_query, keyfile_path):
+def create_and_load_reference_table(flag, project_id, dataset, table_name, load_type, stg_and_ref_create_table, mapping_stg_to_ref_query, keyfile_path):
     try:
         keyfile = keyfile_path
 
@@ -399,7 +396,7 @@ def create_and_load_reference_table(flag, project_id, dataset, table_name, stg_a
                 INSERT INTO `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}`
                 SELECT {mapping_stg_to_ref_query}, FALSE AS IS_DELETED, FALSE AS IS_HARD_DELETE, CURRENT_DATETIME AS DW_CREATE_DATETIME, CURRENT_DATETIME AS DW_LOAD_DATETIME FROM `{project_id.lower()}.stg_{dataset.lower()}.{table_name.lower()}`;                
                 '''
-        elif flag == 1:
+        elif flag == 1 and load_type == 'FULL':
             query = f'''
                 DROP TABLE IF EXISTS `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}`;
                 CREATE TABLE IF NOT EXISTS `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}` (
@@ -408,7 +405,18 @@ def create_and_load_reference_table(flag, project_id, dataset, table_name, stg_a
 
                 INSERT INTO `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}`
                 SELECT {mapping_stg_to_ref_query}, FALSE AS IS_DELETED, FALSE AS IS_HARD_DELETE, CURRENT_DATETIME AS DW_CREATE_DATETIME, CURRENT_DATETIME AS DW_LOAD_DATETIME FROM `{project_id.lower()}.stg_{dataset.lower()}.{table_name.lower()}`;                
-                '''             
+                '''
+        elif flag == 1 and load_type == 'INCR':
+            query = f'''
+                DROP TABLE IF EXISTS `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}`;
+                CREATE TABLE IF NOT EXISTS `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}` (
+                {stg_and_ref_create_table}, IS_DELETED BOOL, IS_HARD_DELETE BOOL, DW_CREATE_DATETIME DATETIME, DW_LOAD_DATETIME DATETIME
+                );
+
+                INSERT INTO `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}`
+                SELECT {mapping_stg_to_ref_query}, FALSE AS IS_DELETED, FALSE AS IS_HARD_DELETE, CURRENT_DATETIME AS DW_CREATE_DATETIME, CURRENT_DATETIME AS DW_LOAD_DATETIME FROM `{project_id.lower()}.stg_{dataset.lower()}.{table_name.lower()}`;                
+                '''
+                     
         
         query_job = client.query(query)
 

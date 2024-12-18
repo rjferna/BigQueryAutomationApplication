@@ -1,0 +1,4 @@
+pandas==2.2.3
+google-cloud-core==2.4.1
+google-api-core==2.21.0
+pycryptodome==3.21.0

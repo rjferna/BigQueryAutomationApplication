@@ -1,23 +1,17 @@
+## Intro
+The goal of this project repository is to build an application framework to support automated data collection leveraging GCP storage & Bigquery.
+
 ## Prerequisites
 
-1. **Python Modules**
-    * pandas==2.23
-    * google-cloud-core==2.4.1
-    * google-api-core==2.21.0
-    * pycryptodome==3.21.0
-
-2. GCP Account (Free trial is offered)
+1. GCP Account (Free trial is offered)
     * Create a BigQuery Project for Metadata.
     * Create bucket for Metadata project
     * Create a Service Account for Metadata Project
     * Generate a keyfile Metadata Project
 
-3. CoinCap API Key
+2. CoinCap API Key
     * To Generate API key refer to: <a href="https://docs.coincap.io/#intro" target="_blank">CoinCap - Documentation</a> 
 
-
-## Intro
-The goal of this project repository is to build an application framework to support automated data collection leveraging GCP storage & Bigquery.
 
 ## Bigquery Metadata Utility Objects
 
