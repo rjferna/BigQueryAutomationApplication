@@ -56,6 +56,7 @@ ingestion workflow that is executed.
 ![alt text](workflow_action_history.png)
 
 **CHANGE_EVENT**
+
 TBD...
 
 ## Data Ingestions: 
@@ -68,12 +69,15 @@ transparent and accurate data on asset price and availability.
 CoinCap: <a href="https://docs.coincap.io/#intro" target="_blank">CoinCap - Documentation</a>
 
 **AWS S3 BUCKET**
+
 TBD ...
 
 **GCP BUCKET**
+
 TBD ...
 
 **SFTP**
+
 TBD ...
 
 
