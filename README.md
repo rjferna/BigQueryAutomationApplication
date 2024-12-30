@@ -1,10 +1,10 @@
 ## Intro
-The goal of this project repository is to build an application framework to support automated data collection leveraging GCP storage & Bigquery.
+The goal of this project repository is to build a data ingestion framework to support automated data collection leveraging GCP storage & Bigquery.
 
 ## Prerequisites
 
 1. GCP Account (Free trial is offered)
-    * Create a BigQuery Project for Metadata.
+    * Create a BigQuery Project for Metadata Utilities.
     * Create bucket for Metadata project
     * Create a Service Account for Metadata Project
     * Generate a keyfile Metadata Project
@@ -67,26 +67,37 @@ transparent and accurate data on asset price and availability.
 
 CoinCap: <a href="https://docs.coincap.io/#intro" target="_blank">CoinCap - Documentation</a>
 
-**TBD**
+**AWS S3 BUCKET**
+TBD ...
 
-Looking into additional sources I can use to flesh out this project. 
+**GCP BUCKET**
+TBD ...
+
+**SFTP**
+TBD ...
 
 
 ### Parser details
 
 **Description: The data will be first loaded to a Flat File**
 
-* **-s:** The section name of configuration file, which will be used to get the object information.
+* **-s:** The section name of configuration file, which will be used to direct workflow execution.
+
+* **-cn:** The connection name of the data source, which will be used to get the data source connection details.
 
 * **-a:** The asset name which will be used to get the object information.
+
+* **-lt:** Overrides the data load type. If not specified, the program will use the value in `ingestion_config` SQL table
+    * FULL
+    * INCR
+
+* **-c:** The configuration file to be used. If not specified, the program will try to find it with "./config.ini"
 
 * **-l:** Logging level, "info" by default.
     * info
     * debug
     * warning
     * error
-
-* **-p:** The configuration file to be used. If not specified, the program will try to find it with "./config.ini"
 
 * **--print_log:** Whether print the log to console. False by default
 
@@ -95,28 +106,37 @@ Looking into additional sources I can use to flesh out this project.
 
 * **Crypto Asset data:** 
 ``` 
-python3 controller.py -s COINCAP_ASSET -a EXTERNAL_COINCAP_ASSETS -l info 
+python3 controller.py -s REQUEST -cn COINCAP_ASSET -a COINCAP_ASSETS -l info 
 ```
-
 
 * **BITCOIN ASSET HISTORY:** 
 ```
-python3 controller.py -s COINCAP_BITCOIN_HISTORY -a EXTERNAL_COINCAP_BITCOIN_HISTORY -l info
+python3 controller.py -s REQUEST -cn COINCAP_BITCOIN_HISTORY -a COINCAP_BITCOIN_HISTORY -l info
 ```
 
 * **CRYPTO EXCHANGE DATA:** 
 ```
-python3 controller.py -s COINCAP_EXCHANGES -a EXTERNAL_COINCAP_EXCHANGES -l info
+python3 controller.py -s REQUEST -cn COINCAP_EXCHANGES -a COINCAP_EXCHANGES -l info
 ```
 
 * **CRYPTO COIN RATES:** 
 ```
-python3 controller.py -s COINCAP_RATES -a EXTERNAL_COINCAP_RATES -l info
+python3 controller.py -s REQUEST -cn COINCAP_RATES -a COINCAP_RATES -l info
 ```
 
 * **CRYPTO MARKETS DATA:** 
 ```
-python3 controller.py -s COINCAP_MARKETS -a EXTERNAL_COINCAP_MARKETS -l info
+python3 controller.py -s REQUEST -cn COINCAP_MARKETS -a COINCAP_MARKETS -l info
+```
+
+* **CRYPTO ASSET With LOAD TYPE OVERRIDE:** 
+```
+python3 controller.py -s REQUEST -cn COINCAP_ASSETS -a COINCAP_ASSETS -lt INCR -l info
+```
+
+* **CRYPTO ASSET With PRESET CONFIG:** 
+```
+python3 controller.py -s REQUEST -cn COINCAP_ASSETS -a COINCAP_ASSETS -c ./new_config.ini -l info
 ```
 
 ### TODO: 

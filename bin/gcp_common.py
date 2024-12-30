@@ -2,51 +2,63 @@ from google.cloud import storage, bigquery
 from google.oauth2 import service_account
 from datetime import datetime, timedelta
 
-def list_files_in_bucket(bucket_name, bucket_destination,keyfile_path):
+
+def list_files_in_bucket(bucket_name, bucket_destination, keyfile_path):
     # Initialize a client with the service account keyfile
     storage_client = storage.Client.from_service_account_json(keyfile_path)
-    
+
     # Get the bucket
     bucket = storage_client.bucket(bucket_name)
-    
+
     # List all objects in the bucket
     blobs = bucket.list_blobs()
 
     bucket_items = []
     files = []
 
-    #print(f"Files in bucket {bucket_name}:")
+    # print(f"Files in bucket {bucket_name}:")
     for blob in blobs:
         bucket_items.append(blob.name)
-    
+
     # Clean Name
     for val in range(0, len(bucket_items)):
-        if  len(bucket_items[val]) >= 21:
-            #files.append(bucket_items[val].split('input/nhl-game-data/')[1].split('.')[0]) # Removes bucket path and file type extension
+        if len(bucket_items[val]) >= 21:
+            # files.append(bucket_items[val].split('input/nhl-game-data/')[1].split('.')[0]) # Removes bucket path and file type extension
             files.append(bucket_items[val].split(bucket_destination)[1])
 
     return files
 
-def upload_to_bucket(bucket_name, source_file_name, destination_blob_name, keyfile_path): 
-    try: 
-        # Initialize a client with the service account keyfile 
-        storage_client = storage.Client.from_service_account_json(keyfile_path) 
-    
-        # Get the bucket 
-        bucket = storage_client.bucket(bucket_name) 
-    
-        # Create a blob and upload the file to the bucket 
-        blob = bucket.blob(destination_blob_name) 
-        blob.upload_from_filename(source_file_name) 
-    
-        #print(f"File {source_file_name} uploaded to {destination_blob_name}.")
+
+def upload_to_bucket(
+    bucket_name, source_file_name, destination_blob_name, keyfile_path
+):
+    try:
+        # Initialize a client with the service account keyfile
+        storage_client = storage.Client.from_service_account_json(keyfile_path)
+
+        # Get the bucket
+        bucket = storage_client.bucket(bucket_name)
+
+        # Create a blob and upload the file to the bucket
+        blob = bucket.blob(destination_blob_name)
+        blob.upload_from_filename(source_file_name)
+
+        # print(f"File {source_file_name} uploaded to {destination_blob_name}.")
         return "SUCCESS"
     except Exception as e:
         return f"Error: {e}."
 
-def archive_file(source_bucket_name, source_file_name, archive_bucket_name, archive_destination,archive_file_name, keyfile_path):
+
+def archive_file(
+    source_bucket_name,
+    source_file_name,
+    archive_bucket_name,
+    archive_destination,
+    archive_file_name,
+    keyfile_path,
+):
     try:
-        # Initialize a client with the service account keyfile 
+        # Initialize a client with the service account keyfile
         storage_client = storage.Client.from_service_account_json(keyfile_path)
 
         # Get the source bucket
@@ -58,29 +70,29 @@ def archive_file(source_bucket_name, source_file_name, archive_bucket_name, arch
 
         # Generate the new filename with current date-time
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        new_name = f'{timestamp}_{archive_file_name}' # archive_file_name.format(timestamp=timestamp)
+        new_name = f"{timestamp}_{archive_file_name}"  # archive_file_name.format(timestamp=timestamp)
 
         # Copy the blob to the new location with the new name
         source_bucket.copy_blob(
-            source_file,
-            archive_destination_bucket,
-            archive_destination + new_name
+            source_file, archive_destination_bucket, archive_destination + new_name
         )
 
         source_file.delete()
 
-        return 'SUCCESS'
+        return "SUCCESS"
     except Exception as e:
-        return f'Error: {e}'
+        return f"Error: {e}"
 
 
 def query_dataset(query, keyfile_path):
-    try: 
+    try:
         keyfile = keyfile_path
 
         # Create credentials & Initialize client
         credentials = service_account.Credentials.from_service_account_file(keyfile)
-        client = bigquery.Client(credentials=credentials, project=credentials.project_id)
+        client = bigquery.Client(
+            credentials=credentials, project=credentials.project_id
+        )
 
         # Execute the query
         query_job = client.query(query)
@@ -88,45 +100,53 @@ def query_dataset(query, keyfile_path):
         # Fetch the results
         results = query_job.result()
 
-        # Store results in a dictionary 
-        result_dict = {} 
-        for row in results: 
-            row_dict = {key: row[key] for key in row.keys()} 
-            result_dict[row[0]] = row_dict # Using the first column's value as the dictionary key # Print the results
+        # Store results in a dictionary
+        result_dict = {}
+        for row in results:
+            row_dict = {key: row[key] for key in row.keys()}
+            result_dict[row[0]] = (
+                row_dict  # Using the first column's value as the dictionary key # Print the results
+            )
 
         return result_dict
     except Exception as e:
         return f"Error: {e}"
 
-def get_incremental_date(date, project_id,dataset,table_name, keyfile_path):
-    try: 
+
+def get_incremental_date(date, project_id, dataset, table_name, keyfile_path):
+    try:
         keyfile = keyfile_path
 
         # Create credentials & Initialize Client
         credentials = service_account.Credentials.from_service_account_file(keyfile)
-        client = bigquery.Client(credentials=credentials, project=credentials.project_id)
+        client = bigquery.Client(
+            credentials=credentials, project=credentials.project_id
+        )
 
-        query=f'''
+        query = f"""
                 SELECT MAX({date.lower()}) as MX_DATE FROM `{project_id.lower()}.{dataset.lower()}.{table_name.lower()}`
-                '''
+                """
 
         # Execute the query
         query_job = client.query(query)
 
         results = query_job.result()
 
-        result_dict = {} 
-        for row in results: 
-            row_dict = {key: row[key] for key in row.keys()} 
-            result_dict[row[0]] = row_dict # Using the first column's value as the dictionary key # Print the results
+        result_dict = {}
+        for row in results:
+            row_dict = {key: row[key] for key in row.keys()}
+            result_dict[row[0]] = (
+                row_dict  # Using the first column's value as the dictionary key # Print the results
+            )
 
         # Identify Data Ingestion Workflow
         for key, value in result_dict.items():
-             date_value = value['MX_DATE']
+            date_value = value["MX_DATE"]
 
         return date_value
     except Exception as e:
-        return (datetime.now() - timedelta(days=5)).strftime('%Y-%m-%dT%H:%M:%SZ')
+        return (datetime.now() - timedelta(days=5)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
 
 def get_table_exists(project_id, dataset, table_name, keyfile_path):
     try:
@@ -134,29 +154,34 @@ def get_table_exists(project_id, dataset, table_name, keyfile_path):
 
         # Create credentials & Initialize Client
         credentials = service_account.Credentials.from_service_account_file(keyfile)
-        client = bigquery.Client(credentials=credentials, project=credentials.project_id)
+        client = bigquery.Client(
+            credentials=credentials, project=credentials.project_id
+        )
 
-        query = f'''
+        query = f"""
                 SELECT COUNT(1) as flag FROM `{project_id.lower()}.{dataset.lower()}.__TABLES_SUMMARY__` WHERE table_id = '{table_name.lower()}';
-                ''' 
+                """
         query_job = client.query(query)
 
         # Fetch the results
         results = query_job.result()
 
-        # Store results in a dictionary 
-        result_dict = {} 
-        for row in results: 
-            row_dict = {key: row[key] for key in row.keys()} 
-            result_dict[row[0]] = row_dict # Using the first column's value as the dictionary key # Print the results
-    
+        # Store results in a dictionary
+        result_dict = {}
+        for row in results:
+            row_dict = {key: row[key] for key in row.keys()}
+            result_dict[row[0]] = (
+                row_dict  # Using the first column's value as the dictionary key # Print the results
+            )
+
         # Identify Data Ingestion Workflow
-        for key, value in result_dict.items(): 
-            flag= value['flag']
+        for key, value in result_dict.items():
+            flag = value["flag"]
 
         return flag
     except Exception as e:
-        return f"Error: {e}"    
+        return f"Error: {e}"
+
 
 def get_connection_details(connection_name, table_name, keyfile_path):
     try:
@@ -164,9 +189,11 @@ def get_connection_details(connection_name, table_name, keyfile_path):
 
         # Create credentials & Initialze Client
         credentials = service_account.Credentials.from_service_account_file(keyfile)
-        client = bigquery.Client(credentials=credentials, project=credentials.project_id)
+        client = bigquery.Client(
+            credentials=credentials, project=credentials.project_id
+        )
 
-        query = f'''
+        query = f"""
             SELECT DISTINCT 
             a.connection_name, 
             a.connection_url, 
@@ -197,31 +224,36 @@ def get_connection_details(connection_name, table_name, keyfile_path):
             AND
                 b.table_name = '{table_name}'
             ; 
-            ''' 
+            """
 
         # Execute the query
         query_job = client.query(query)
 
         results = query_job.result()
 
-        result_dict = {} 
-        for row in results: 
-            row_dict = {key: row[key] for key in row.keys()} 
-            result_dict[row[0]] = row_dict # Using the first column's value as the dictionary key # Print the results
+        result_dict = {}
+        for row in results:
+            row_dict = {key: row[key] for key in row.keys()}
+            result_dict[row[0]] = (
+                row_dict  # Using the first column's value as the dictionary key # Print the results
+            )
 
         return result_dict
     except Exception as e:
-        return f"Error: {e}"    
-    
+        return f"Error: {e}"
+
+
 def get_column_details(project_id, dataset, table_name, keyfile_path):
     try:
         keyfile = keyfile_path
 
         # Create credentials & Initialze Client
         credentials = service_account.Credentials.from_service_account_file(keyfile)
-        client = bigquery.Client(credentials=credentials, project=credentials.project_id)
+        client = bigquery.Client(
+            credentials=credentials, project=credentials.project_id
+        )
 
-        query = f'''
+        query = f"""
             SELECT 
             table_name,
             STRING_AGG(CONCAT(lower(mapping_column), ' ', (datatype)), ', ') AS stg_ref_create_table_column_details,  
@@ -237,21 +269,22 @@ def get_column_details(project_id, dataset, table_name, keyfile_path):
                 table_name = '{table_name}'
             GROUP BY table_name
             ; 
-            ''' 
+            """
 
         # Execute the query
         query_job = client.query(query)
 
         results = query_job.result()
 
-        result_dict = {} 
-        for row in results: 
-            row_dict = {key: row[key] for key in row.keys()} 
-            result_dict[row[0]] = row_dict 
+        result_dict = {}
+        for row in results:
+            row_dict = {key: row[key] for key in row.keys()}
+            result_dict[row[0]] = row_dict
 
         return result_dict
     except Exception as e:
-        return f"Error: {e}"     
+        return f"Error: {e}"
+
 
 def get_workflow_action_process_id(keyfile_path):
     try:
@@ -259,41 +292,48 @@ def get_workflow_action_process_id(keyfile_path):
 
         # Create credentials & Initialize Client
         credentials = service_account.Credentials.from_service_account_file(keyfile)
-        client = bigquery.Client(credentials=credentials, project=credentials.project_id)
+        client = bigquery.Client(
+            credentials=credentials, project=credentials.project_id
+        )
 
-        query = '''
+        query = """
                 SELECT MAX(process_id) + 1 as process_id FROM `dw-metadata-utilities.metadata_utilities.workflow_action_history`;
-                ''' 
+                """
         # Execute the query
         query_job = client.query(query)
- 
+
         results = query_job.result()
 
-        result_dict = {} 
-        for row in results: 
-            row_dict = {key: row[key] for key in row.keys()} 
-            result_dict[row[0]] = row_dict 
-    
-        for key, value in result_dict.items(): 
-            process_id= value['process_id']
+        result_dict = {}
+        for row in results:
+            row_dict = {key: row[key] for key in row.keys()}
+            result_dict[row[0]] = row_dict
+
+        for key, value in result_dict.items():
+            process_id = value["process_id"]
 
         return process_id
     except Exception as e:
         return f"Error: {e}"
 
-def set_workflow_action_process_id(process_id, connection_name, dataset, table_name, execution_status,keyfile_path):
+
+def set_workflow_action_process_id(
+    process_id, connection_name, dataset, table_name, execution_status, keyfile_path
+):
     try:
         keyfile = keyfile_path
 
         # Create credentials & Initialize Client
         credentials = service_account.Credentials.from_service_account_file(keyfile)
-        client = bigquery.Client(credentials=credentials, project=credentials.project_id)
+        client = bigquery.Client(
+            credentials=credentials, project=credentials.project_id
+        )
 
-        query = f'''
+        query = f"""
             INSERT INTO `dw-metadata-utilities.metadata_utilities.workflow_action_history`
             (process_id,connection_name,dataset,table_name,executed_by,execution_start_datetime,execution_end_datetime,execution_status) 
             VALUES({process_id},'{connection_name}','{dataset}','{table_name}', 'ADMIN',CURRENT_DATETIME,NULL,{execution_status});
-            ''' 
+            """
 
         # Execute the query
         query_job = client.query(query)
@@ -304,19 +344,22 @@ def set_workflow_action_process_id(process_id, connection_name, dataset, table_n
     except Exception as e:
         return f"Error: {e}"
 
+
 def update_workflow_action_process_id(process_id, execution_status, keyfile_path):
     try:
         keyfile = keyfile_path
 
         # Create credentials & Initialize Client
         credentials = service_account.Credentials.from_service_account_file(keyfile)
-        client = bigquery.Client(credentials=credentials, project=credentials.project_id)
+        client = bigquery.Client(
+            credentials=credentials, project=credentials.project_id
+        )
 
-        query = f'''
+        query = f"""
             UPDATE `dw-metadata-utilities.metadata_utilities.workflow_action_history`
             SET execution_end_datetime = CURRENT_DATETIME, execution_status = {execution_status}
             WHERE process_id = {process_id}
-            ''' 
+            """
 
         query_job = client.query(query)
 
@@ -325,22 +368,27 @@ def update_workflow_action_process_id(process_id, execution_status, keyfile_path
         return "SUCCESS"
     except Exception as e:
         return f"Error: {e}"
-    
-def create_external_table(project_id, dataset, table_name, bucket_destination_name, file_format, keyfile_path):
+
+
+def create_external_table(
+    project_id, dataset, table_name, bucket_destination_name, file_format, keyfile_path
+):
     try:
         keyfile = keyfile_path
 
         # Create credentials & Initialize Client
         credentials = service_account.Credentials.from_service_account_file(keyfile)
-        client = bigquery.Client(credentials=credentials, project=credentials.project_id)
+        client = bigquery.Client(
+            credentials=credentials, project=credentials.project_id
+        )
 
-        query = f'''
+        query = f"""
                 CREATE OR REPLACE EXTERNAL TABLE `{project_id.lower()}.external_{dataset.lower()}.{table_name.lower()}`
                 OPTIONS (
                 format = '{file_format}',
                 uris = ['gs://{bucket_destination_name}']
                 );
-                ''' 
+                """
 
         query_job = client.query(query)
 
@@ -350,15 +398,25 @@ def create_external_table(project_id, dataset, table_name, bucket_destination_na
     except Exception as e:
         return f"Error: {e}"
 
-def create_and_load_staging_table(project_id, dataset, table_name, stg_and_ref_create_table, source_to_stg_conversion, keyfile_path):
+
+def create_and_load_staging_table(
+    project_id,
+    dataset,
+    table_name,
+    stg_and_ref_create_table,
+    source_to_stg_conversion,
+    keyfile_path,
+):
     try:
         keyfile = keyfile_path
 
         # Create credentials & Initialize Client
         credentials = service_account.Credentials.from_service_account_file(keyfile)
-        client = bigquery.Client(credentials=credentials, project=credentials.project_id)
+        client = bigquery.Client(
+            credentials=credentials, project=credentials.project_id
+        )
 
-        query = f'''
+        query = f"""
                 DROP TABLE IF EXISTS `{project_id.lower()}.stg_{dataset.lower()}.{table_name.lower()}`;
                 CREATE TABLE IF NOT EXISTS `{project_id.lower()}.stg_{dataset.lower()}.{table_name.lower()}` (
                 {stg_and_ref_create_table}
@@ -366,38 +424,49 @@ def create_and_load_staging_table(project_id, dataset, table_name, stg_and_ref_c
 
                 INSERT INTO `{project_id.lower()}.stg_{dataset.lower()}.{table_name.lower()}`
                 SELECT {source_to_stg_conversion} FROM `{project_id.lower()}.external_{dataset.lower()}.{table_name.lower()}`;                
-                ''' 
-        
+                """
+
         query_job = client.query(query)
 
         results = query_job.result()
 
         return "SUCCESS"
     except Exception as e:
-        return f"Error: {e}"     
+        return f"Error: {e}"
 
 
-def create_and_load_reference_table(flag, project_id, dataset, table_name, load_type, stg_and_ref_create_table, mapping_stg_to_ref_query, keyfile_path):
+def create_and_load_reference_table(
+    flag,
+    project_id,
+    dataset,
+    table_name,
+    load_type,
+    stg_and_ref_create_table,
+    mapping_stg_to_ref_query,
+    keyfile_path,
+):
     try:
         keyfile = keyfile_path
 
         # Create credentials & Initialize Client
         credentials = service_account.Credentials.from_service_account_file(keyfile)
-        client = bigquery.Client(credentials=credentials, project=credentials.project_id)
+        client = bigquery.Client(
+            credentials=credentials, project=credentials.project_id
+        )
 
-        #flag: 0 table does not exists, 1 = full data load, 2 = incremental data load
+        # flag: 0 table does not exists, 1 = full data load, 2 = incremental data load
 
         if flag == 0:
-            query = f'''
+            query = f"""
                 CREATE TABLE IF NOT EXISTS `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}` (
                 {stg_and_ref_create_table}, IS_DELETED BOOL, IS_HARD_DELETE BOOL, DW_CREATE_DATETIME DATETIME, DW_LOAD_DATETIME DATETIME
                 );
 
                 INSERT INTO `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}`
                 SELECT {mapping_stg_to_ref_query}, FALSE AS IS_DELETED, FALSE AS IS_HARD_DELETE, CURRENT_DATETIME AS DW_CREATE_DATETIME, CURRENT_DATETIME AS DW_LOAD_DATETIME FROM `{project_id.lower()}.stg_{dataset.lower()}.{table_name.lower()}`;                
-                '''
-        elif flag == 1 and load_type == 'FULL':
-            query = f'''
+                """
+        elif flag == 1 and load_type == "FULL":
+            query = f"""
                 DROP TABLE IF EXISTS `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}`;
                 CREATE TABLE IF NOT EXISTS `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}` (
                 {stg_and_ref_create_table}, IS_DELETED BOOL, IS_HARD_DELETE BOOL, DW_CREATE_DATETIME DATETIME, DW_LOAD_DATETIME DATETIME
@@ -405,9 +474,9 @@ def create_and_load_reference_table(flag, project_id, dataset, table_name, load_
 
                 INSERT INTO `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}`
                 SELECT {mapping_stg_to_ref_query}, FALSE AS IS_DELETED, FALSE AS IS_HARD_DELETE, CURRENT_DATETIME AS DW_CREATE_DATETIME, CURRENT_DATETIME AS DW_LOAD_DATETIME FROM `{project_id.lower()}.stg_{dataset.lower()}.{table_name.lower()}`;                
-                '''
-        elif flag == 1 and load_type == 'INCR':
-            query = f'''
+                """
+        elif flag == 1 and load_type == "INCR":
+            query = f"""
                 DROP TABLE IF EXISTS `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}`;
                 CREATE TABLE IF NOT EXISTS `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}` (
                 {stg_and_ref_create_table}, IS_DELETED BOOL, IS_HARD_DELETE BOOL, DW_CREATE_DATETIME DATETIME, DW_LOAD_DATETIME DATETIME
@@ -415,13 +484,12 @@ def create_and_load_reference_table(flag, project_id, dataset, table_name, load_
 
                 INSERT INTO `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}`
                 SELECT {mapping_stg_to_ref_query}, FALSE AS IS_DELETED, FALSE AS IS_HARD_DELETE, CURRENT_DATETIME AS DW_CREATE_DATETIME, CURRENT_DATETIME AS DW_LOAD_DATETIME FROM `{project_id.lower()}.stg_{dataset.lower()}.{table_name.lower()}`;                
-                '''
-                     
-        
+                """
+
         query_job = client.query(query)
 
         results = query_job.result()
 
         return "SUCCESS"
     except Exception as e:
-        return f"Error: {e}"         
+        return f"Error: {e}"

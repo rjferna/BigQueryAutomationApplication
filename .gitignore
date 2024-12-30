@@ -1,5 +1,5 @@
 bin/__pycache__
-bin/config.ini
+bin/config2.ini
 bin/playground.ipynb
 bin/playground.py
 bin/gcp_query.py
