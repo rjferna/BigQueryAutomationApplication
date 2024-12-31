@@ -419,11 +419,11 @@ def create_and_load_staging_table(
         query = f"""
                 DROP TABLE IF EXISTS `{project_id.lower()}.stg_{dataset.lower()}.{table_name.lower()}`;
                 CREATE TABLE IF NOT EXISTS `{project_id.lower()}.stg_{dataset.lower()}.{table_name.lower()}` (
-                {stg_and_ref_create_table}
+                {stg_and_ref_create_table}, IS_DELETED BOOL, IS_HARD_DELETE BOOL, DW_CREATE_DATETIME DATETIME, DW_LOAD_DATETIME DATETIME
                 );
 
                 INSERT INTO `{project_id.lower()}.stg_{dataset.lower()}.{table_name.lower()}`
-                SELECT {source_to_stg_conversion} FROM `{project_id.lower()}.external_{dataset.lower()}.{table_name.lower()}`;                
+                SELECT {source_to_stg_conversion}, FALSE AS IS_DELETED, FALSE AS IS_HARD_DELETE, CURRENT_DATETIME AS DW_CREATE_DATETIME, CURRENT_DATETIME AS DW_LOAD_DATETIME FROM `{project_id.lower()}.external_{dataset.lower()}.{table_name.lower()}`;                
                 """
 
         query_job = client.query(query)
@@ -435,6 +435,29 @@ def create_and_load_staging_table(
         return f"Error: {e}"
 
 
+def set_column_alias(columns):
+    try:
+        list_of_columns = columns.split(",")
+        mydict = {}
+        hold = []
+        alias_T = []
+        alias_S = []
+
+        for cols in list_of_columns:
+            if cols not in ("IS_DELETED", "IS_HARD_DELETE", "DW_CREATE_DATETIME"):
+                hold.append("T." + cols + "=S." + cols)
+                alias_T.append("T." + cols)
+                alias_S.append("S." + cols)
+
+        mydict.update({"cols": ",".join(hold)})
+        mydict.update({"T": ",".join(alias_T)})
+        mydict.update({"S": ",".join(alias_S)})
+
+        return mydict
+    except Exception as e:
+        return f"Error"
+
+
 def create_and_load_reference_table(
     flag,
     project_id,
@@ -443,6 +466,7 @@ def create_and_load_reference_table(
     load_type,
     stg_and_ref_create_table,
     mapping_stg_to_ref_query,
+    primary_key_column,
     keyfile_path,
 ):
     try:
@@ -454,7 +478,7 @@ def create_and_load_reference_table(
             credentials=credentials, project=credentials.project_id
         )
 
-        # flag: 0 table does not exists, 1 = full data load, 2 = incremental data load
+        # flag: 0 table does not exists, 1 table exists
 
         if flag == 0:
             query = f"""
@@ -476,14 +500,18 @@ def create_and_load_reference_table(
                 SELECT {mapping_stg_to_ref_query}, FALSE AS IS_DELETED, FALSE AS IS_HARD_DELETE, CURRENT_DATETIME AS DW_CREATE_DATETIME, CURRENT_DATETIME AS DW_LOAD_DATETIME FROM `{project_id.lower()}.stg_{dataset.lower()}.{table_name.lower()}`;                
                 """
         elif flag == 1 and load_type == "INCR":
-            query = f"""
-                DROP TABLE IF EXISTS `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}`;
-                CREATE TABLE IF NOT EXISTS `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}` (
-                {stg_and_ref_create_table}, IS_DELETED BOOL, IS_HARD_DELETE BOOL, DW_CREATE_DATETIME DATETIME, DW_LOAD_DATETIME DATETIME
-                );
 
-                INSERT INTO `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}`
-                SELECT {mapping_stg_to_ref_query}, FALSE AS IS_DELETED, FALSE AS IS_HARD_DELETE, CURRENT_DATETIME AS DW_CREATE_DATETIME, CURRENT_DATETIME AS DW_LOAD_DATETIME FROM `{project_id.lower()}.stg_{dataset.lower()}.{table_name.lower()}`;                
+            dict_statements = set_column_alias(columns=mapping_stg_to_ref_query)
+
+            query = f"""
+                MERGE `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}` as T
+                USING `{project_id.lower()}.stg_{dataset.lower()}.{table_name.lower()}` as S
+                ON T.{primary_key_column.lower()} = S.{primary_key_column.lower()}
+                WHEN MATCHED THEN
+                    UPDATE SET {dict_statements['cols']}
+                WHEN NOT MATCHED THEN
+                INSERT ({mapping_stg_to_ref_query},  IS_DELETED, IS_HARD_DELETE, DW_CREATE_DATETIME, DW_LOAD_DATETIME)
+                VALUES ({dict_statements['S']}, FALSE, FALSE, CURRENT_DATETIME, CURRENT_DATETIME);                
                 """
 
         query_job = client.query(query)

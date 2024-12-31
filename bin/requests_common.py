@@ -32,33 +32,42 @@ def get_request(key, url, encoding):
         return f"Error: {response_json.get('error', 'Unknown error')}"
 
 
-def get_request_payload(key, url, encoding, start, end, interval):
+def get_request_payload(key, url, encoding, incremental_start_date, incremental_end_date, interval):
     api_key = key
     base_url = url
     accepted_encoding = encoding
-    interval = interval
+    
+    if incremental_start_date == None:
+        headers = {
+            "Accept-Encoding": accepted_encoding,
+            "Authorization": f"bearer {api_key}"
+            }
+        response = requests.get(base_url, headers=headers)
+    else:            
+        interval = interval
+        start_date = get_unix_timestamp(incremental_start_date)
+        end_date = get_unix_timestamp(incremental_end_date)
 
-    start_timestamp = start
-    end_timestamp = end
+        if start_date is None or end_date is None:
+            return "Error: Date Conversion"
+        
+        headers = {
+            "Accept-Encoding": accepted_encoding,
+            "Authorization": f"bearer {api_key}"
+        }
 
-    start_date = get_unix_timestamp(start_timestamp)
-    end_date = get_unix_timestamp(end_timestamp)
+        params = {
+            "start": start_date,
+            "end": end_date,
+            "interval": interval
+            }
 
-    if start_date is None or end_date is None:
-        return None
+        response = requests.get(base_url, headers=headers, params=params)
 
-    param = {
-        "Accept-Encoding": accepted_encoding,  # Enables Compression
-        "start": start_date,
-        "end": end_date,
-        "interval": interval,
-    }
-
-    response = requests.get(base_url, params=param)
     response_json = response.json()
-
     if response.status_code == 200:
-        # dict_to_csv(response_json, file_path + file_name)
         return response_json
+    elif response_json == None:
+        return f"Error: None Object Returned."
     else:
         return f"Error: {response_json.get('error', 'Unknown error')}"

@@ -152,6 +152,9 @@ python3 controller.py -s REQUEST -cn COINCAP_ASSETS -a COINCAP_ASSETS -c ./new_c
     * ~~Staging Table with Ingestion column details~~ 
     * ~~Reference Tables with DW Created Datetime & Load Datetime~~
 * ~~Add functionality for Full data load on Reference Table.~~
-* Add functionality for Incremental data load on Reference Tables.
+* ~~Add functionality for Incremental data load on Reference Tables.~~
+* Add S3 as a Data Source
+* Add GCP Bucket as a Data Source
+* Add SFTP connection as a Data Source
 * Add Change Event metadata log to record pre/post changes on column level.
 

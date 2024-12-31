@@ -85,7 +85,6 @@ def main():
             dataset = value["dataset"]
             primary_key_column = value["primary_key_column"]
             incremental_date_column = value["incremental_date_column"]
-            load_type = value["load_type"]
             extra_parameters = value["extra_parameters"]
             delimiter = value["delimiter"]
             file_format = value["file_format"]
@@ -96,6 +95,10 @@ def main():
             bucket_destination = value["bucket_destination"]
             archive_destination = value["archive_destination"]
             accepted_encoding = value["accepted_encoding"]
+            if args.get("load_type_override") == None:
+                load_type = value["load_type"]
+            else:
+                load_type = args.get("load_type_override")
 
         # Get Process_Id from GCP workflow_action_history
         logger.info(f"Get Process_ID From Worflow Action History.")
@@ -104,76 +107,92 @@ def main():
         )
         logger.info(f"Output: ({process_id}).")
 
-        if ingestion_type != args.get("section"):
-            logger.info(
-                f"[Error]: Section type does not match ingestion configuration."
-            )
-            sys.exit(1)
+        # Set Workflow Action History Job Execution Record
+        logger.info("Set Workflow Action History Execution Record")
+        workflow_result = set_workflow_action_process_id(
+            process_id=process_id,
+            connection_name=connection_name,
+            dataset=dataset,
+            table_name=args.get("asset"),
+            execution_status=0,
+            keyfile_path=config_var.get("gcp_creds"),
+        )
+        logger.info(f"Workflow Action Result: {workflow_result}")
 
         # Decrypt Credentials
         logger.info("Obtaining Connection Credentials")
         pc = Prpcrypt(security_token)
 
+        # Confirm Section
+        if ingestion_type != args.get("section"):
+            logger.info(
+                f"[Error]: Section type does not match ingestion configuration."
+            )
+
         # Identify Data Ingestion Workflow type
         if ingestion_type == "REQUEST":
-            logger.info("Set Workflow Action History Execution Record")
-            workflow_result = set_workflow_action_process_id(
-                process_id=process_id,
-                connection_name=connection_name,
-                dataset=dataset,
-                table_name=args.get("asset"),
-                execution_status=0,
-                keyfile_path=config_var.get("gcp_creds"),
-            )
-            logger.info(f"Workflow Action Result: {workflow_result}")
+            if incremental_date_column == None:
+                response = get_request_payload(
+                    key=pc.decrypt(password_encrypted),
+                    url=connection_url,
+                    encoding=accepted_encoding,
+                    incremental_start_date=None,
+                    incremental_end_date=None,
+                    interval=None,
+                )
+            elif incremental_date_column is not None:
+                # Check if Reference table Exists, if not set default incremental start date
+                logger.info(
+                    f"Checking if Reference Table Exists: {project_id}.ref_{dataset}.{args.get('asset').lower()}"
+                )
+                ref_exists = get_table_exists(
+                    project_id=project_id,
+                    dataset=f"ref_{dataset}",
+                    table_name=args.get("asset"),
+                    keyfile_path=config_var.get("gcp_creds"),
+                )
 
-            response = get_request(
-                key=pc.decrypt(password_encrypted),
-                url=connection_url,
-                encoding=accepted_encoding,
-            )
-        if ingestion_type == "REQUEST_PAYLOAD":
-            logger.info("Set Workflow Action History Execution Record")
-            workflow_result = set_workflow_action_process_id(
-                process_id=process_id,
-                connection_name=connection_name,
-                dataset=dataset,
-                table_name=args.get("asset"),
-                execution_status=0,
-                keyfile_path=config_var.get("gcp_creds"),
-            )
-            logger.info(f"Workflow Action Result: {workflow_result}")
+                if str(ref_exists) == str or ref_exists == 0 or load_type == "FULL":
+                    incr_result = (datetime.now() - timedelta(days=3)).strftime(
+                        "%Y-%m-%dT%H:%M:%SZ"
+                    )
+                    logger.info(f"Incremental Start Datetime: {incr_result}")
 
-            logger.info("Get last incremental loadtime")
-            incr_result = get_incremental_date(
-                date=incremental_date_column,
-                project_id=project_id,
-                dataset=dataset,
-                table_name=args.get("asset"),
-                keyfile_path=config_var.get("gcp_creds"),
-            )
-            logger.info(f"Data collection start datetime: {incr_result}")
+                    response = get_request_payload(
+                        key=pc.decrypt(password_encrypted),
+                        url=connection_url,
+                        encoding=accepted_encoding,
+                        incremental_start_date=incr_result,
+                        incremental_end_date=datetime.now().strftime(
+                            "%Y-%m-%dT%H:%M:%SZ"
+                        ),
+                        interval=extra_parameters,
+                    )
+                else:
+                    logger.info("Get last incremental loadtime")
+                    incr_result = get_incremental_date(
+                        date=incremental_date_column,
+                        project_id=project_id,
+                        dataset=dataset,
+                        table_name=args.get("asset"),
+                        keyfile_path=config_var.get("gcp_creds"),
+                    )
+                    logger.info(f"Data collection start datetime: {incr_result}")
 
-            response = get_request_payload(
-                key=pc.decrypt(password_encrypted),
-                url=connection_url,
-                encoding=accepted_encoding,
-                start=incr_result,
-                end=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                interval=extra_parameters,
-            )
+                    response = get_request_payload(
+                        key=pc.decrypt(password_encrypted),
+                        url=connection_url,
+                        encoding=accepted_encoding,
+                        incremental_start_date=incr_result,
+                        incremental_end_date=datetime.now().strftime(
+                            "%Y-%m-%dT%H:%M:%SZ"
+                        ),
+                        interval=extra_parameters,
+                    )
 
         # Check Response Data & Write to Parquet
         if "Error:" in response:
             logger.info(f"{response}")
-            update_result = update_workflow_action_process_id(
-                process_id=process_id,
-                execution_status=-1,
-                keyfile_path=config_var.get("gcp_creds"),
-            )
-            logger.info(f"Error: Updating Workflow Action Record: {update_result}")
-        elif response is None:
-            logger.info("Error: None Object returned")
             update_result = update_workflow_action_process_id(
                 process_id=process_id,
                 execution_status=-1,
@@ -410,6 +429,7 @@ def main():
                 load_type=load_type,
                 stg_and_ref_create_table=stg_and_ref_create_table,
                 mapping_stg_to_ref_query=mapping_stg_to_ref_column_query,
+                primary_key_column=primary_key_column,
                 keyfile_path=config_var.get("gcp_creds"),
             )
             logger.info(
@@ -429,6 +449,7 @@ def main():
                 load_type=load_type,
                 stg_and_ref_create_table=stg_and_ref_create_table,
                 mapping_stg_to_ref_query=mapping_stg_to_ref_column_query,
+                primary_key_column=primary_key_column,
                 keyfile_path=config_var.get("gcp_creds"),
             )
             logger.info(
@@ -448,6 +469,7 @@ def main():
                 load_type=load_type,
                 stg_and_ref_create_table=stg_and_ref_create_table,
                 mapping_stg_to_ref_query=mapping_stg_to_ref_column_query,
+                primary_key_column=primary_key_column,
                 keyfile_path=config_var.get("gcp_creds"),
             )
             logger.info(
