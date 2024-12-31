@@ -27,3 +27,19 @@ INSERT INTO `dw-metadata-utilities.metadata_utilities.ingestion_connection_info`
 ((SELECT IFNULL(MAX(id), 0) + 1 FROM `dw-metadata-utilities.metadata_utilities.ingestion_connection_info`),'COINCAP_RATES', 'https://api.coincap.io/v2/rates/', 'ADMIN', '<encrypted credentials>', '<security token if needed>','ADMIN',CURRENT_DATETIME,'ADMIN',CURRENT_DATETIME),
 ((SELECT IFNULL(MAX(id), 0) + 1 FROM `dw-metadata-utilities.metadata_utilities.ingestion_connection_info`),'COINCAP_MARKETS', 'https://api.coincap.io/v2/markets/', 'ADMIN', '<encrypted credentials>', '<security token if needed>','ADMIN',CURRENT_DATETIME,'ADMIN',CURRENT_DATETIME)
 ;
+
+
+/* AWS S3 Example */
+INSERT INTO `dw-metadata-utilities.metadata_utilities.ingestion_connection_info` 
+(connection_id, connection_name,connection_url,user_name, password_encrypted,  security_token, created_by, created_date, modified_by, modified_date) VALUES
+((SELECT IFNULL(MAX(id), 0) + 1 FROM `dw-metadata-utilities.metadata_utilities.ingestion_connection_info`),
+'S3_COINCAP', 
+'<BUCKET_NAME>', 
+'ADMIN', 
+'<encrypted_credentials>', 
+{"token": "<security_token_if_needed>", "access": "<access_key_if_needed>"}',
+'ADMIN',
+CURRENT_DATETIME,
+'ADMIN',
+CURRENT_DATETIME)
+;

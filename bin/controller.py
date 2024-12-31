@@ -1,11 +1,13 @@
 import os
 import sys
+import json
 import shutil
 from datetime import datetime, timedelta
 
 from config import Config
 from parse_args import parse_args
 from logger import set_logger
+from aws_common import get_aws_s3
 from gcp_common import (
     get_connection_details,
     get_column_details,
@@ -20,9 +22,9 @@ from gcp_common import (
     get_table_exists,
     create_and_load_reference_table,
 )
-from requests_common import get_request, get_request_payload
+from requests_common import get_request
 from encryption_decryption_common import Prpcrypt
-from file_common import response_to_parquet
+from file_common import response_to_parquet, csv_to_parquet
 
 
 def main():
@@ -81,8 +83,9 @@ def main():
             connection_url = value["connection_url"]
             user_name = value["user_name"]
             password_encrypted = value["password_encrypted"]
-            security_token = value["security_token"]
+            security_token = json.loads(value["security_token"])
             ingestion_type = value["ingestion_type"]
+            source_schema_table_name = value["source_schema_table_name"]
             project_id = value["project_id"]
             dataset = value["dataset"]
             primary_key_column = value["primary_key_column"]
@@ -131,7 +134,7 @@ def main():
 
         # Decrypt Credentials
         logger.info("Obtaining Connection Credentials")
-        pc = Prpcrypt(security_token)
+        pc = Prpcrypt(security_token["access"])
 
         # Confirm Section
         if ingestion_type != args.get("section"):
@@ -142,7 +145,7 @@ def main():
         # Identify Data Ingestion Workflow type
         if ingestion_type == "REQUEST":
             if incremental_date_column == None:
-                response = get_request_payload(
+                response = get_request(
                     key=pc.decrypt(password_encrypted),
                     url=connection_url,
                     encoding=accepted_encoding,
@@ -162,13 +165,13 @@ def main():
                     keyfile_path=config_var.get("gcp_creds"),
                 )
 
-                if str(ref_exists) == str or ref_exists == 0 or load_type == "FULL":
+                if str(ref_exists) == str or (ref_exists == 0 and load_type == "FULL"):
                     incr_result = (datetime.now() - timedelta(days=3)).strftime(
                         "%Y-%m-%dT%H:%M:%SZ"
                     )
                     logger.info(f"Incremental Start Datetime: {incr_result}")
 
-                    response = get_request_payload(
+                    response = get_request(
                         key=pc.decrypt(password_encrypted),
                         url=connection_url,
                         encoding=accepted_encoding,
@@ -189,7 +192,7 @@ def main():
                     )
                     logger.info(f"Data collection start datetime: {incr_result}")
 
-                    response = get_request_payload(
+                    response = get_request(
                         key=pc.decrypt(password_encrypted),
                         url=connection_url,
                         encoding=accepted_encoding,
@@ -199,6 +202,15 @@ def main():
                         ),
                         interval=extra_parameters,
                     )
+        elif ingestion_type == "S3":
+            response = get_aws_s3(
+                aws_access_key=pc.decrypt(password_encrypted),
+                aws_security_token=security_token["token"],
+                bucket_path=connection_url,
+                prefix_path=source_schema_table_name,
+                import_path=config_var.get("file_path"),
+                import_file="{}.{}".format(args.get("asset"), file_format),
+            )
 
         # Check Response Data & Write to Parquet
         if "Error:" in response:
@@ -210,12 +222,23 @@ def main():
             )
             logger.info(f"Error: Updating Workflow Action Record: {update_result}")
         else:
-            logger.info(f"Response Type: {type(response)}")
-            response_file = response_to_parquet(
-                response_data=response,
-                parquet_filename=config_var.get("file_path") + args.get("asset"),
-            )
-            logger.info(f"Writing response data to file")
+            if ingestion_type == "REQUEST":
+                logger.info(f"Response Type: {type(response)}")
+                response_file = response_to_parquet(
+                    response_data=response,
+                    parquet_filename=config_var.get("file_path") + args.get("asset"),
+                )
+                logger.info(f"Writing response data to file")
+            elif ingestion_type in ("S3", "GCPB", "SFTP"):
+                logger.info(f"Response Type: {type(response)}")
+                response_file = csv_to_parquet(
+                    file_path=response,
+                    header=None,
+                    seperator=delimiter,
+                    quotation=quote_characters,
+                    parquet_filename=config_var.get("file_path") + args.get("asset"),
+                )
+                logger.info(f"Writing response data to file")
 
         # Upload Data to GCP Bucket
         logger.info(

@@ -3,7 +3,9 @@ from google.oauth2 import service_account
 from datetime import datetime, timedelta
 
 
-def list_files_in_bucket(bucket_name, bucket_destination, keyfile_path):
+def list_files_in_bucket(
+    bucket_name: str, bucket_destination: str, keyfile_path: str
+) -> list[str]:
     # Initialize a client with the service account keyfile
     storage_client = storage.Client.from_service_account_json(keyfile_path)
 
@@ -30,8 +32,11 @@ def list_files_in_bucket(bucket_name, bucket_destination, keyfile_path):
 
 
 def upload_to_bucket(
-    bucket_name, source_file_name, destination_blob_name, keyfile_path
-):
+    bucket_name: str,
+    source_file_name: str,
+    destination_blob_name: str,
+    keyfile_path: str,
+) -> str:
     try:
         # Initialize a client with the service account keyfile
         storage_client = storage.Client.from_service_account_json(keyfile_path)
@@ -50,13 +55,13 @@ def upload_to_bucket(
 
 
 def archive_file(
-    source_bucket_name,
-    source_file_name,
-    archive_bucket_name,
-    archive_destination,
-    archive_file_name,
-    keyfile_path,
-):
+    source_bucket_name: str,
+    source_file_name: str,
+    archive_bucket_name: str,
+    archive_destination: str,
+    archive_file_name: str,
+    keyfile_path: str,
+) -> str:
     try:
         # Initialize a client with the service account keyfile
         storage_client = storage.Client.from_service_account_json(keyfile_path)
@@ -84,7 +89,7 @@ def archive_file(
         return f"Error: {e}"
 
 
-def query_dataset(query, keyfile_path):
+def query_dataset(query: str, keyfile_path: str) -> str:
     try:
         keyfile = keyfile_path
 
@@ -113,7 +118,9 @@ def query_dataset(query, keyfile_path):
         return f"Error: {e}"
 
 
-def get_incremental_date(date, project_id, dataset, table_name, keyfile_path):
+def get_incremental_date(
+    date: str, project_id: str, dataset: str, table_name: str, keyfile_path: str
+):
     try:
         keyfile = keyfile_path
 
@@ -124,7 +131,7 @@ def get_incremental_date(date, project_id, dataset, table_name, keyfile_path):
         )
 
         query = f"""
-                SELECT MAX({date.lower()}) as MX_DATE FROM `{project_id.lower()}.{dataset.lower()}.{table_name.lower()}`
+                SELECT MAX({date.lower()}) as MX_DATE FROM `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}`
                 """
 
         # Execute the query
@@ -145,10 +152,12 @@ def get_incremental_date(date, project_id, dataset, table_name, keyfile_path):
 
         return date_value
     except Exception as e:
-        return (datetime.now() - timedelta(days=5)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        return f"Error: {e}"  # (datetime.now() - timedelta(days=5)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def get_table_exists(project_id, dataset, table_name, keyfile_path):
+def get_table_exists(
+    project_id: str, dataset: str, table_name: str, keyfile_path: str
+) -> str:
     try:
         keyfile = keyfile_path
 
@@ -183,7 +192,9 @@ def get_table_exists(project_id, dataset, table_name, keyfile_path):
         return f"Error: {e}"
 
 
-def get_connection_details(connection_name, table_name, keyfile_path):
+def get_connection_details(
+    connection_name: str, table_name: str, keyfile_path: str
+) -> dict:
     try:
         keyfile = keyfile_path
 
@@ -201,6 +212,7 @@ def get_connection_details(connection_name, table_name, keyfile_path):
             a.password_encrypted, 
             a.security_token, 
             b.ingestion_type,
+            b.source_schema_table_name,
             b.dataset,
             b.primary_key_column,
             b.incremental_date_column,
@@ -243,7 +255,9 @@ def get_connection_details(connection_name, table_name, keyfile_path):
         return f"Error: {e}"
 
 
-def get_column_details(project_id, dataset, table_name, keyfile_path):
+def get_column_details(
+    project_id: str, dataset: str, table_name: str, keyfile_path: str
+) -> dict:
     try:
         keyfile = keyfile_path
 
@@ -286,7 +300,7 @@ def get_column_details(project_id, dataset, table_name, keyfile_path):
         return f"Error: {e}"
 
 
-def get_workflow_action_process_id(keyfile_path):
+def get_workflow_action_process_id(keyfile_path: str) -> str:
     try:
         keyfile = keyfile_path
 
@@ -318,8 +332,13 @@ def get_workflow_action_process_id(keyfile_path):
 
 
 def set_workflow_action_process_id(
-    process_id, connection_name, dataset, table_name, execution_status, keyfile_path
-):
+    process_id: str,
+    connection_name: str,
+    dataset: str,
+    table_name: str,
+    execution_status: str,
+    keyfile_path: str,
+) -> str:
     try:
         keyfile = keyfile_path
 
@@ -345,7 +364,9 @@ def set_workflow_action_process_id(
         return f"Error: {e}"
 
 
-def update_workflow_action_process_id(process_id, execution_status, keyfile_path):
+def update_workflow_action_process_id(
+    process_id: str, execution_status: str, keyfile_path: str
+) -> str:
     try:
         keyfile = keyfile_path
 
@@ -371,8 +392,13 @@ def update_workflow_action_process_id(process_id, execution_status, keyfile_path
 
 
 def create_external_table(
-    project_id, dataset, table_name, bucket_destination_name, file_format, keyfile_path
-):
+    project_id: str,
+    dataset,
+    table_name: str,
+    bucket_destination_name: str,
+    file_format: str,
+    keyfile_path: str,
+) -> str:
     try:
         keyfile = keyfile_path
 
@@ -400,13 +426,13 @@ def create_external_table(
 
 
 def create_and_load_staging_table(
-    project_id,
-    dataset,
-    table_name,
-    stg_and_ref_create_table,
-    source_to_stg_conversion,
-    keyfile_path,
-):
+    project_id: str,
+    dataset: str,
+    table_name: str,
+    stg_and_ref_create_table: str,
+    source_to_stg_conversion: str,
+    keyfile_path: str,
+) -> str:
     try:
         keyfile = keyfile_path
 
@@ -435,7 +461,7 @@ def create_and_load_staging_table(
         return f"Error: {e}"
 
 
-def set_column_alias(columns):
+def set_column_alias(columns: str) -> dict:
     try:
         list_of_columns = columns.split(",")
         mydict = {}
@@ -459,16 +485,16 @@ def set_column_alias(columns):
 
 
 def create_and_load_reference_table(
-    flag,
-    project_id,
-    dataset,
-    table_name,
-    load_type,
-    stg_and_ref_create_table,
-    mapping_stg_to_ref_query,
-    primary_key_column,
-    keyfile_path,
-):
+    flag: int,
+    project_id: str,
+    dataset: str,
+    table_name: str,
+    load_type: str,
+    stg_and_ref_create_table: str,
+    mapping_stg_to_ref_query: str,
+    primary_key_column: str,
+    keyfile_path: str,
+) -> str:
     try:
         keyfile = keyfile_path
 

@@ -72,4 +72,69 @@ VALUES (50000, 'TEST','TEST','ID',NULL,'FULL',NULL,NULL,'TEST',0,'TEST','TEST','
 ((SELECT IFNULL(MAX(ingestion_config_id), 0) + 1 FROM `dw-metadata-utilities.metadata_utilities.ingestion_config`),'REQUEST_PAYLOAD','https://api.coincap.io/v2/assets/bitcoin/history/','ID','TIME','INCR','h1',NULL,'COINCAP',2,'COINCAP_BITCOIN_HISTORY','COINCAP-DATA-HUB','COINCAP_DATA','COINCAP_BITCOIN_HISTORY','JSON',NULL,'COINCAP API 2.0', NULL, NULL, FALSE, TRUE, 'dev-coincap-data', 'input/coincap_history','archive/coincap_history','gzip','ADMIN',CURRENT_DATETIME,'ADMIN',CURRENT_DATETIME),
 ((SELECT IFNULL(MAX(ingestion_config_id), 0) + 1 FROM `dw-metadata-utilities.metadata_utilities.ingestion_config`),'REQUEST','https://api.coincap.io/v2/exchanges/','ID',NULL,'FULL',NULL,NULL,'COINCAP',3,'COINCAP_EXCHANGES','COINCAP-DATA-HUB','COINCAP_DATA','COINCAP_EXCHANGES','JSON',NULL,'COINCAP API 2.0', NULL, NULL, FALSE, TRUE, 'dev-coincap-data', 'input/coincap_exchanges/','archive/coincap_exchanges','gzip','ADMIN',CURRENT_DATETIME,'ADMIN',CURRENT_DATETIME),
 ((SELECT IFNULL(MAX(ingestion_config_id), 0) + 1 FROM `dw-metadata-utilities.metadata_utilities.ingestion_config`),'REQUEST','https://api.coincap.io/v2/rates/','ID',NULL,'FULL',NULL,NULL,'COINCAP',5,'COINCAP_RATES','COINCAP-DATA-HUB','COINCAP_DATA','COINCAP_RATES','JSON',NULL,'COINCAP API 2.0', NULL, NULL, FALSE, TRUE, 'dev-coincap-data', 'input/coincap_rates/','archive/coincap_rates','gzip','ADMIN',CURRENT_DATETIME,'ADMIN',CURRENT_DATETIME),
-((SELECT IFNULL(MAX(ingestion_config_id), 0) + 1 FROM `dw-metadata-utilities.metadata_utilities.ingestion_config`),'REQUEST','https://api.coincap.io/v2/assets/','ID',NULL,'FULL',NULL,NULL,'COINCAP',1,'COINCAP_ASSET','COINCAP-DATA-HUB','COINCAP_DATA','COINCAP_ASSETS','JSON',NULL,'COINCAP API 2.0', NULL, NULL, FALSE, TRUE, 'dev-coincap-data', 'input/coincap_assets/','archive/coincap_assets','gzip','ADMIN',CURRENT_DATETIME,'ADMIN',CURRENT_DATETIME);
+((SELECT IFNULL(MAX(ingestion_config_id), 0) + 1 FROM `dw-metadata-utilities.metadata_utilities.ingestion_config`),'REQUEST','https://api.coincap.io/v2/assets/','ID',NULL,'FULL',NULL,NULL,'COINCAP',1,'COINCAP_ASSET','COINCAP-DATA-HUB','COINCAP_DATA','COINCAP_ASSETS','JSON',NULL,'COINCAP API 2.0', NULL, NULL, FALSE, TRUE, 'dev-coincap-data', 'input/coincap_assets/','archive/coincap_assets','gzip','ADMIN',CURRENT_DATETIME,'ADMIN',CURRENT_DATETIME),
+
+
+
+/* AWS S3 Example */
+INSERT INTO `dw-metadata-utilities.metadata_utilities.ingestion_config`
+(
+ingestion_config_id, --50000 
+ingestion_type, --S3
+source_schema_table_name, --PREFIX_PATH_FILE_NAME
+primary_key_column, --ID
+incremental_date_column, --NULL
+load_type,  --FULL
+extra_parameters, --NULL
+delimiter,  --','
+source_system, --S3
+connection_id,
+connection_name, --COINCAP_ASSET
+project_id, --COINCAP-DATA-HUB
+dataset,    --COINCAP_DATA
+table_name, --MOVIE_REVIEW
+file_format, --'csv'
+quote_characters, --'"'
+api_source_name, --'boto3'
+partitioned_by, --NULL
+escape_characters, --NULL
+is_parquet, --FALSE
+is_external, --FALSE
+bucket, --dev-coincap-data
+bucket_destination, --input/
+archive_destination, --archive/coincap_assets/ 
+accepted_encoding, --gzip
+created_by, --ADMIN
+created_date, --CURRENT_DATETIME
+modified_by, --ADMIN
+modified_date--CURRENT_DATETIME
+) VALUES
+((SELECT IFNULL(MAX(ingestion_config_id), 0) + 1 FROM `dw-metadata-utilities.metadata_utilities.ingestion_config`),
+'S3',
+'data/movie_review.csv',
+'CID',
+NULL,
+'FULL',
+NULL,
+',',
+'S3',
+6,
+'S3_COINCAP',
+'COINCAP-DATA-HUB',
+'COINCAP_DATA',
+'MOVIE_REVIEW',
+'csv',
+'"',
+'boto3', 
+NULL, 
+NULL, 
+FALSE, 
+FALSE, 
+'dev-coincap-data', 
+'input/moview_review/',
+'archive/movie_review',
+NULL,
+'ADMIN',
+CURRENT_DATETIME,
+'ADMIN',
+CURRENT_DATETIME);
