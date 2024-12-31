@@ -1,0 +1,21 @@
+2024-12-30 22:46:08,401 - logger.py[line:38], set_logger[INFO]: Set logger level to info
+2024-12-30 22:46:08,402 - controller.py[line:67], main[INFO]: Querying GCP for Data Ingestion Details: (REQUEST, COINCAP_BITCOIN_HISTORY ,BITCOIN_HISTORY)
+2024-12-30 22:46:09,171 - controller.py[line:105], main[INFO]: Get Process_ID From Worflow Action History.
+2024-12-30 22:46:09,991 - controller.py[line:109], main[INFO]: Output: (100131).
+2024-12-30 22:46:09,992 - controller.py[line:121], main[INFO]: Set Workflow Action History Execution Record
+2024-12-30 22:46:11,820 - controller.py[line:130], main[INFO]: Workflow Action Result: SUCCESS
+2024-12-30 22:46:11,820 - controller.py[line:133], main[INFO]: Obtaining Connection Credentials
+2024-12-30 22:46:11,820 - controller.py[line:156], main[INFO]: Checking if Reference Table Exists: COINCAP-DATA-HUB.ref_COINCAP_DATA.bitcoin_history
+2024-12-30 22:46:12,652 - controller.py[line:170], main[INFO]: Incremental Start Datetime: 2024-12-27T22:46:12Z
+2024-12-30 22:46:13,063 - controller.py[line:214], main[INFO]: Response Type: <class 'dict'>
+2024-12-30 22:46:13,119 - controller.py[line:219], main[INFO]: Writing response data to file
+2024-12-30 22:46:13,119 - controller.py[line:223], main[INFO]: Checking to see if file exists: input/coincap_history/BITCOIN_HISTORY.parquet
+2024-12-30 22:46:13,524 - controller.py[line:240], main[INFO]: Archive Status: SUCCESS
+2024-12-30 22:46:13,525 - controller.py[line:242], main[INFO]: Uploading Data to Bucket Path: input/coincap_history/BITCOIN_HISTORY.parquet
+2024-12-30 22:46:13,773 - controller.py[line:275], main[INFO]: Creating External Table: COINCAP-DATA-HUB.COINCAP_DATA.bitcoin_history
+2024-12-30 22:46:14,649 - controller.py[line:313], main[INFO]: Querying GCP for Column Details.
+2024-12-30 22:46:15,243 - controller.py[line:350], main[INFO]: Creating and loading Staging Table: COINCAP-DATA-HUB.stg_COINCAP_DATA.bitcoin_history
+2024-12-30 22:46:18,307 - controller.py[line:384], main[INFO]: Checking if Reference Table Exists: COINCAP-DATA-HUB.ref_COINCAP_DATA.bitcoin_history
+2024-12-30 22:46:19,385 - controller.py[line:404], main[INFO]: Reference Table Flag: 0. Table does not exists, Creating table & loading in staging data.
+2024-12-30 22:46:22,436 - controller.py[line:418], main[INFO]: Drop & Create Reference table: SUCCESS: <google.cloud.bigquery.table._EmptyRowIterator object at 0x7fabadceb9b0>. Full dataload Completed.
+Execution END.

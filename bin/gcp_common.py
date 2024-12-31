@@ -430,7 +430,7 @@ def create_and_load_staging_table(
 
         results = query_job.result()
 
-        return "SUCCESS"
+        return f"SUCCESS: {results}"
     except Exception as e:
         return f"Error: {e}"
 
@@ -518,6 +518,6 @@ def create_and_load_reference_table(
 
         results = query_job.result()
 
-        return "SUCCESS"
+        return f"SUCCESS: {results}"
     except Exception as e:
         return f"Error: {e}"

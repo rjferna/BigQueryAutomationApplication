@@ -1,0 +1,19 @@
+2024-12-30 22:36:41,676 - logger.py[line:38], set_logger[INFO]: Set logger level to info
+2024-12-30 22:36:41,676 - controller.py[line:67], main[INFO]: Querying GCP for Data Ingestion Details: (REQUEST, COINCAP_EXCHANGES ,EXCHANGES)
+2024-12-30 22:36:42,549 - controller.py[line:105], main[INFO]: Get Process_ID From Worflow Action History.
+2024-12-30 22:36:43,399 - controller.py[line:109], main[INFO]: Output: (100127).
+2024-12-30 22:36:43,400 - controller.py[line:126], main[INFO]: Set Workflow Action History Execution Record
+2024-12-30 22:36:45,172 - controller.py[line:135], main[INFO]: Workflow Action Result: SUCCESS
+2024-12-30 22:36:45,173 - controller.py[line:138], main[INFO]: Obtaining Connection Credentials
+2024-12-30 22:36:45,989 - controller.py[line:219], main[INFO]: Response Type: <class 'dict'>
+2024-12-30 22:36:46,011 - controller.py[line:224], main[INFO]: Writing response data to file
+2024-12-30 22:36:46,011 - controller.py[line:228], main[INFO]: Checking to see if file exists: input/coincap_exchanges/EXCHANGES.parquet
+2024-12-30 22:36:46,237 - controller.py[line:243], main[INFO]: Error: Error: 404 POST https://storage.googleapis.com/storage/v1/b/dev-coincap-data/o/input%2Fcoincap_exchanges%2FEXCHANGES.parquet/copyTo/b/dev-coincap-data/o/archive%2Fcoincap_exchanges%2F20241230223646_EXCHANGES.parquet?prettyPrint=false: No such object: dev-coincap-data/input/coincap_exchanges/EXCHANGES.parquet
+2024-12-30 22:36:46,237 - controller.py[line:247], main[INFO]: Uploading Data to Bucket Path: input/coincap_exchanges/EXCHANGES.parquet
+2024-12-30 22:36:46,532 - controller.py[line:280], main[INFO]: Creating External Table: COINCAP-DATA-HUB.COINCAP_DATA.exchanges
+2024-12-30 22:36:47,168 - controller.py[line:318], main[INFO]: Querying GCP for Column Details.
+2024-12-30 22:36:47,990 - controller.py[line:355], main[INFO]: Creating and loading Staging Table: COINCAP-DATA-HUB.stg_COINCAP_DATA.exchanges
+2024-12-30 22:36:51,422 - controller.py[line:389], main[INFO]: Checking if Reference Table Exists: COINCAP-DATA-HUB.ref_COINCAP_DATA.exchanges
+2024-12-30 22:36:52,509 - controller.py[line:409], main[INFO]: Reference Table Flag: 0. Table does not exists, Creating table & loading in staging data.
+2024-12-30 22:36:55,618 - controller.py[line:423], main[INFO]: Drop & Create Reference table: SUCCESS: <google.cloud.bigquery.table._EmptyRowIterator object at 0x7ff7988aaf90>. Full dataload Completed.
+Execution END.

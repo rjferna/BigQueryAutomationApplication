@@ -1,0 +1,19 @@
+2024-12-30 22:38:14,313 - logger.py[line:38], set_logger[INFO]: Set logger level to info
+2024-12-30 22:38:14,313 - controller.py[line:67], main[INFO]: Querying GCP for Data Ingestion Details: (REQUEST, COINCAP_MARKETS ,MARKETS)
+2024-12-30 22:38:15,090 - controller.py[line:105], main[INFO]: Get Process_ID From Worflow Action History.
+2024-12-30 22:38:15,915 - controller.py[line:109], main[INFO]: Output: (100129).
+2024-12-30 22:38:15,916 - controller.py[line:126], main[INFO]: Set Workflow Action History Execution Record
+2024-12-30 22:38:17,930 - controller.py[line:135], main[INFO]: Workflow Action Result: SUCCESS
+2024-12-30 22:38:17,930 - controller.py[line:138], main[INFO]: Obtaining Connection Credentials
+2024-12-30 22:38:18,582 - controller.py[line:219], main[INFO]: Response Type: <class 'dict'>
+2024-12-30 22:38:18,592 - controller.py[line:224], main[INFO]: Writing response data to file
+2024-12-30 22:38:18,592 - controller.py[line:228], main[INFO]: Checking to see if file exists: input/coincap_markets/MARKETS.parquet
+2024-12-30 22:38:18,831 - controller.py[line:243], main[INFO]: Error: Error: 404 POST https://storage.googleapis.com/storage/v1/b/dev-coincap-data/o/input%2Fcoincap_markets%2FMARKETS.parquet/copyTo/b/dev-coincap-data/o/archive%2Fcoincap_markets%2F20241230223818_MARKETS.parquet?prettyPrint=false: No such object: dev-coincap-data/input/coincap_markets/MARKETS.parquet
+2024-12-30 22:38:18,831 - controller.py[line:247], main[INFO]: Uploading Data to Bucket Path: input/coincap_markets/MARKETS.parquet
+2024-12-30 22:38:19,124 - controller.py[line:280], main[INFO]: Creating External Table: COINCAP-DATA-HUB.COINCAP_DATA.markets
+2024-12-30 22:38:19,948 - controller.py[line:318], main[INFO]: Querying GCP for Column Details.
+2024-12-30 22:38:20,685 - controller.py[line:355], main[INFO]: Creating and loading Staging Table: COINCAP-DATA-HUB.stg_COINCAP_DATA.markets
+2024-12-30 22:38:24,077 - controller.py[line:389], main[INFO]: Checking if Reference Table Exists: COINCAP-DATA-HUB.ref_COINCAP_DATA.markets
+2024-12-30 22:38:25,116 - controller.py[line:409], main[INFO]: Reference Table Flag: 0. Table does not exists, Creating table & loading in staging data.
+2024-12-30 22:38:28,241 - controller.py[line:423], main[INFO]: Drop & Create Reference table: SUCCESS: <google.cloud.bigquery.table._EmptyRowIterator object at 0x7f78cb5f2f90>. Full dataload Completed.
+Execution END.

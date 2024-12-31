@@ -35,7 +35,9 @@ def main():
     config_var = config_parser.get(args["section"])
 
     # Logging level setup
-    log_domain = "LOG_{}".format(args["section"] + "_" + args.get("asset"))
+    log_domain = "{}_{}_{}".format(
+        args["section"], args["connection"], args.get("asset")
+    )
     logger = set_logger(
         args.get("log_level"),
         log_domain,
@@ -106,6 +108,14 @@ def main():
             keyfile_path=config_var.get("gcp_creds")
         )
         logger.info(f"Output: ({process_id}).")
+
+        # Set logfilepath and logfile
+        logfilepath = config_var.get("log_path") + "{:%Y%m%d}_{}.log".format(
+            datetime.now(), log_domain
+        )
+        logfile = config_var.get(
+            "log_bucket_workflow_execution_destination"
+        ) + "{:%Y%m%d}_{}_{}.log".format(datetime.now(), process_id, log_domain)
 
         # Set Workflow Action History Job Execution Record
         logger.info("Set Workflow Action History Execution Record")
@@ -250,13 +260,6 @@ def main():
                 "Data Ingestion Completed with Errors." + "\n" + "Execution END."
             )
 
-            logfilepath = config_var.get("log_path") + "{}_{:%Y_%m_%d}.log".format(
-                log_domain, datetime.now()
-            )
-            logfile = config_var.get(
-                "log_bucket_workflow_execution_destination"
-            ) + "{}_{:%Y_%m_%d}.log".format(log_domain, datetime.now())
-
             # Upload Workflow Execution Log File to GCP Bucket
             upload_to_bucket(
                 bucket_name=config_var.get("log_bucket"),
@@ -295,13 +298,6 @@ def main():
                 "Data Ingestion Completed with Errors." + "\n" + "Execution END."
             )
 
-            logfilepath = config_var.get("log_path") + "{}_{:%Y_%m_%d}.log".format(
-                log_domain, datetime.now()
-            )
-            logfile = config_var.get(
-                "log_bucket_workflow_execution_destination"
-            ) + "{}_{:%Y_%m_%d}.log".format(log_domain, datetime.now())
-
             # Upload Workflow Execution Log File to GCP Bucket
             upload_to_bucket(
                 bucket_name=config_var.get("log_bucket"),
@@ -330,13 +326,6 @@ def main():
             logger.info(
                 "Data Ingestion Completed with Errors." + "\n" + "Execution END."
             )
-
-            logfilepath = config_var.get("log_path") + "{}_{:%Y_%m_%d}.log".format(
-                log_domain, datetime.now()
-            )
-            logfile = config_var.get(
-                "log_bucket_workflow_execution_destination"
-            ) + "{}_{:%Y_%m_%d}.log".format(log_domain, datetime.now())
 
             # Upload Workflow Execution Log File to GCP Bucket
             upload_to_bucket(
@@ -379,13 +368,6 @@ def main():
                 "Data Ingestion Completed with Errors." + "\n" + "Execution END."
             )
 
-            logfilepath = config_var.get("log_path") + "{}_{:%Y_%m_%d}.log".format(
-                log_domain, datetime.now()
-            )
-            logfile = config_var.get(
-                "log_bucket_workflow_execution_destination"
-            ) + "{}_{:%Y_%m_%d}.log".format(log_domain, datetime.now())
-
             # Upload Workflow Execution Log File to GCP Bucket
             upload_to_bucket(
                 bucket_name=config_var.get("log_bucket"),
@@ -394,8 +376,6 @@ def main():
                 keyfile_path=config_var.get("gcp_creds"),
             )
             sys.exit(1)
-
-        # **********************************************  Work in progress **********************************************#
 
         # Check if Reference table Exists if not Create Reference table
         logger.info(
@@ -494,13 +474,6 @@ def main():
             execution_status=1,
             keyfile_path=config_var.get("gcp_creds"),
         )
-
-        logfilepath = config_var.get("log_path") + "{}_{:%Y_%m_%d}.log".format(
-            log_domain, datetime.now()
-        )
-        logfile = config_var.get(
-            "log_bucket_workflow_execution_destination"
-        ) + "{}_{:%Y_%m_%d}.log".format(log_domain, datetime.now())
 
         # Upload Workflow Execution Log File to GCP Bucket
         upload_to_bucket(

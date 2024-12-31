@@ -32,35 +32,33 @@ def get_request(key, url, encoding):
         return f"Error: {response_json.get('error', 'Unknown error')}"
 
 
-def get_request_payload(key, url, encoding, incremental_start_date, incremental_end_date, interval):
+def get_request_payload(
+    key, url, encoding, incremental_start_date, incremental_end_date, interval
+):
     api_key = key
     base_url = url
     accepted_encoding = encoding
-    
+
     if incremental_start_date == None:
         headers = {
             "Accept-Encoding": accepted_encoding,
-            "Authorization": f"bearer {api_key}"
-            }
+            "Authorization": f"bearer {api_key}",
+        }
         response = requests.get(base_url, headers=headers)
-    else:            
+    else:
         interval = interval
         start_date = get_unix_timestamp(incremental_start_date)
         end_date = get_unix_timestamp(incremental_end_date)
 
         if start_date is None or end_date is None:
             return "Error: Date Conversion"
-        
+
         headers = {
             "Accept-Encoding": accepted_encoding,
-            "Authorization": f"bearer {api_key}"
+            "Authorization": f"bearer {api_key}",
         }
 
-        params = {
-            "start": start_date,
-            "end": end_date,
-            "interval": interval
-            }
+        params = {"start": start_date, "end": end_date, "interval": interval}
 
         response = requests.get(base_url, headers=headers, params=params)
 

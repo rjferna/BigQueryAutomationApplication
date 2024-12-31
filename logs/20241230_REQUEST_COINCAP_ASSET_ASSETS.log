@@ -1,0 +1,23 @@
+2024-12-30 22:33:30,817 - logger.py[line:38], set_logger[INFO]: Set logger level to info
+2024-12-30 22:33:30,818 - controller.py[line:67], main[INFO]: Querying GCP for Data Ingestion Details: (REQUEST, COINCAP_ASSET ,ASSETS)
+2024-12-30 22:33:31,577 - controller.py[line:105], main[INFO]: Get Process_ID From Worflow Action History.
+2024-12-30 22:33:32,418 - controller.py[line:109], main[INFO]: Output: (100126).
+2024-12-30 22:34:40,776 - logger.py[line:38], set_logger[INFO]: Set logger level to info
+2024-12-30 22:34:40,776 - controller.py[line:67], main[INFO]: Querying GCP for Data Ingestion Details: (REQUEST, COINCAP_ASSET ,ASSETS)
+2024-12-30 22:34:41,466 - controller.py[line:105], main[INFO]: Get Process_ID From Worflow Action History.
+2024-12-30 22:34:42,147 - controller.py[line:109], main[INFO]: Output: (100126).
+2024-12-30 22:34:42,147 - controller.py[line:126], main[INFO]: Set Workflow Action History Execution Record
+2024-12-30 22:34:43,982 - controller.py[line:135], main[INFO]: Workflow Action Result: SUCCESS
+2024-12-30 22:34:43,983 - controller.py[line:138], main[INFO]: Obtaining Connection Credentials
+2024-12-30 22:34:44,363 - controller.py[line:219], main[INFO]: Response Type: <class 'dict'>
+2024-12-30 22:34:44,406 - controller.py[line:224], main[INFO]: Writing response data to file
+2024-12-30 22:34:44,406 - controller.py[line:228], main[INFO]: Checking to see if file exists: input/coincap_assets/ASSETS.parquet
+2024-12-30 22:34:44,835 - controller.py[line:245], main[INFO]: Archive Status: SUCCESS
+2024-12-30 22:34:44,835 - controller.py[line:247], main[INFO]: Uploading Data to Bucket Path: input/coincap_assets/ASSETS.parquet
+2024-12-30 22:34:45,103 - controller.py[line:280], main[INFO]: Creating External Table: COINCAP-DATA-HUB.COINCAP_DATA.assets
+2024-12-30 22:34:45,819 - controller.py[line:318], main[INFO]: Querying GCP for Column Details.
+2024-12-30 22:34:46,465 - controller.py[line:355], main[INFO]: Creating and loading Staging Table: COINCAP-DATA-HUB.stg_COINCAP_DATA.assets
+2024-12-30 22:34:49,851 - controller.py[line:389], main[INFO]: Checking if Reference Table Exists: COINCAP-DATA-HUB.ref_COINCAP_DATA.assets
+2024-12-30 22:34:50,881 - controller.py[line:429], main[INFO]: Reference Table Flag: 1 Table exists. Data load type: FULL. Drop & Creating table and full refresh.
+2024-12-30 22:34:54,277 - controller.py[line:443], main[INFO]: Drop & Create Reference table: SUCCESS: <google.cloud.bigquery.table._EmptyRowIterator object at 0x7feb77ac9b50>. Full dataload Completed.
+Execution END.

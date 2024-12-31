@@ -23,7 +23,7 @@ def set_logger(log_level, log_domain, print_log=True, log_path=None):
     if not os.path.exists(log_path):
         os.makedirs(log_path)
     file_name = os.path.join(
-        log_path, "{}_{:%Y_%m_%d}.log".format(log_domain, datetime.now())
+        log_path, "{:%Y%m%d}_{}.log".format(datetime.now(), log_domain)
     )
     # print("The log file: {}".format(file_name))
     file_handler = logging.FileHandler(file_name)

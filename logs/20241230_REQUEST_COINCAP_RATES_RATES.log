@@ -1,0 +1,20 @@
+2024-12-30 22:37:38,241 - logger.py[line:38], set_logger[INFO]: Set logger level to info
+2024-12-30 22:37:38,251 - controller.py[line:59], main[INFO]: Archived files in directory: /home/rjfernand/projects/git/BigQueryAutomationFramework/data/
+2024-12-30 22:37:38,255 - controller.py[line:67], main[INFO]: Querying GCP for Data Ingestion Details: (REQUEST, COINCAP_RATES ,RATES)
+2024-12-30 22:37:39,106 - controller.py[line:105], main[INFO]: Get Process_ID From Worflow Action History.
+2024-12-30 22:37:39,912 - controller.py[line:109], main[INFO]: Output: (100128).
+2024-12-30 22:37:39,913 - controller.py[line:126], main[INFO]: Set Workflow Action History Execution Record
+2024-12-30 22:37:41,897 - controller.py[line:135], main[INFO]: Workflow Action Result: SUCCESS
+2024-12-30 22:37:41,898 - controller.py[line:138], main[INFO]: Obtaining Connection Credentials
+2024-12-30 22:37:42,493 - controller.py[line:219], main[INFO]: Response Type: <class 'dict'>
+2024-12-30 22:37:42,502 - controller.py[line:224], main[INFO]: Writing response data to file
+2024-12-30 22:37:42,502 - controller.py[line:228], main[INFO]: Checking to see if file exists: input/coincap_rates/RATES.parquet
+2024-12-30 22:37:42,872 - controller.py[line:243], main[INFO]: Error: Error: 404 POST https://storage.googleapis.com/storage/v1/b/dev-coincap-data/o/input%2Fcoincap_rates%2FRATES.parquet/copyTo/b/dev-coincap-data/o/archive%2Fcoincap_rates%2F20241230223742_RATES.parquet?prettyPrint=false: No such object: dev-coincap-data/input/coincap_rates/RATES.parquet
+2024-12-30 22:37:42,872 - controller.py[line:247], main[INFO]: Uploading Data to Bucket Path: input/coincap_rates/RATES.parquet
+2024-12-30 22:37:43,106 - controller.py[line:280], main[INFO]: Creating External Table: COINCAP-DATA-HUB.COINCAP_DATA.rates
+2024-12-30 22:37:43,703 - controller.py[line:318], main[INFO]: Querying GCP for Column Details.
+2024-12-30 22:37:44,455 - controller.py[line:355], main[INFO]: Creating and loading Staging Table: COINCAP-DATA-HUB.stg_COINCAP_DATA.rates
+2024-12-30 22:37:47,530 - controller.py[line:389], main[INFO]: Checking if Reference Table Exists: COINCAP-DATA-HUB.ref_COINCAP_DATA.rates
+2024-12-30 22:37:48,527 - controller.py[line:409], main[INFO]: Reference Table Flag: 0. Table does not exists, Creating table & loading in staging data.
+2024-12-30 22:37:51,615 - controller.py[line:423], main[INFO]: Drop & Create Reference table: SUCCESS: <google.cloud.bigquery.table._EmptyRowIterator object at 0x7fa9589db950>. Full dataload Completed.
+Execution END.
