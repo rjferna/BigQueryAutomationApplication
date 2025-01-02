@@ -91,15 +91,17 @@ def main():
             primary_key_column = value["primary_key_column"]
             incremental_date_column = value["incremental_date_column"]
             extra_parameters = value["extra_parameters"]
-            delimiter = value["delimiter"]
             file_format = value["file_format"]
+            header = value["header"]
+            delimiter = value["delimiter"]
             quote_characters = value["quote_characters"]
+            escape_characters = value["escape_characters"]
             is_parquet = value["is_parquet"]
-            is_external = value["is_external"]
+            to_parquet = value["to_parquet"]
+            accepted_encoding = value["accepted_encoding"]
             bucket = value["bucket"]
             bucket_destination = value["bucket_destination"]
             archive_destination = value["archive_destination"]
-            accepted_encoding = value["accepted_encoding"]
             if args.get("load_type_override") == None:
                 load_type = value["load_type"]
             else:
@@ -156,7 +158,7 @@ def main():
             elif incremental_date_column is not None:
                 # Check if Reference table Exists, if not set default incremental start date
                 logger.info(
-                    f"Checking if Reference Table Exists: {project_id}.ref_{dataset}.{args.get('asset').lower()}"
+                    f"Checking if Reference Table Exists: {project_id}.ref_{dataset}.{args.get('asset')}"
                 )
                 ref_exists = get_table_exists(
                     project_id=project_id,
@@ -227,22 +229,29 @@ def main():
                 response_file = response_to_parquet(
                     response_data=response,
                     parquet_filename=config_var.get("file_path") + args.get("asset"),
+                    compression=accepted_encoding,
                 )
                 logger.info(f"Writing response data to file")
             elif ingestion_type in ("S3", "GCPB", "SFTP"):
-                logger.info(f"Response Type: {type(response)}")
-                response_file = csv_to_parquet(
-                    file_path=response,
-                    header=None,
-                    seperator=delimiter,
-                    quotation=quote_characters,
-                    parquet_filename=config_var.get("file_path") + args.get("asset"),
-                )
-                logger.info(f"Writing response data to file")
+                if to_parquet == False:
+                    logger.info(f"File remaining as: {file_format}")
+                elif file_format == "CSV" and to_parquet == True:
+                    logger.info(f"Converting {file_format} to PARQUET.")
+                    response_file = csv_to_parquet(
+                        file_path=response,
+                        header=header,
+                        seperator=delimiter,
+                        quotation=quote_characters,
+                        parquet_filename=config_var.get("file_path")
+                        + args.get("asset"),
+                        compression=accepted_encoding,
+                    )
+                    file_format = "PARQUET"
+                    logger.info(f"File Conversion Completed.")
 
-        # Upload Data to GCP Bucket
+        # Archive Existing File in GCP Bucket
         logger.info(
-            f"Checking to see if file exists: {bucket_destination + args.get('asset') + '.' + file_format.lower()}"
+            f"Checking to see if file exists: {bucket_destination + args.get('asset') + '.' + file_format}"
         )
         archive_response = archive_file(
             source_bucket_name=bucket,
@@ -260,8 +269,9 @@ def main():
         else:
             logger.info(f"Archive Status: {archive_response}")
 
+        # Load New Data File To GCP Bucket
         logger.info(
-            f"Uploading Data to Bucket Path: {bucket_destination}{args.get('asset')}.{file_format.lower()}"
+            f"Uploading Data to Bucket Path: {bucket_destination}{args.get('asset')}.{file_format}"
         )
         upload_data = upload_to_bucket(
             bucket_name=bucket,
@@ -294,7 +304,7 @@ def main():
 
         # Create External Table
         logger.info(
-            f"Creating External Table: {project_id}.{dataset}.{args.get('asset').lower()}"
+            f"Creating External Table: {project_id}.{dataset}.{args.get('asset')}"
         )
         create_external = create_external_table(
             project_id=project_id,
@@ -369,7 +379,7 @@ def main():
 
         # Drop & Create Staging Table
         logger.info(
-            f"Creating and loading Staging Table: {project_id}.stg_{dataset}.{args.get('asset').lower()}"
+            f"Creating and loading Staging Table: {project_id}.STG_{dataset}.{args.get('asset')}"
         )
         create_load_staging = create_and_load_staging_table(
             project_id=project_id,
@@ -402,7 +412,7 @@ def main():
 
         # Check if Reference table Exists if not Create Reference table
         logger.info(
-            f"Checking if Reference Table Exists: {project_id}.ref_{dataset}.{args.get('asset').lower()}"
+            f"Checking if Reference Table Exists: {project_id}.REF_{dataset}.{args.get('asset')}"
         )
         ref_exists = get_table_exists(
             project_id=project_id,

@@ -220,15 +220,17 @@ def get_connection_details(
             b.extra_parameters,
             b.project_id,
             b.dataset,
-            b.delimiter,
             b.file_format,
+            b.header,
+            b.delimiter,            
             b.quote_characters,
+            b.escape_characters,
+            b.accepted_encoding,
             b.is_parquet,
-            b.is_external,
+            b.to_parquet,
             b.bucket,
             b.bucket_destination,
-            b.archive_destination,
-            b.accepted_encoding
+            b.archive_destination
             FROM `dw-metadata-utilities.metadata_utilities.ingestion_connection_info` as a
             INNER JOIN `dw-metadata-utilities.metadata_utilities.ingestion_config` as b on a.connection_name = b.connection_name
             WHERE 

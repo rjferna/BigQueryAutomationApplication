@@ -11,7 +11,8 @@ primary_key_column STRING,
 incremental_date_column STRING,
 load_type STRING NOT NULL,  
 extra_parameters STRING, 
-delimiter STRING,    
+partitioned_by STRING,
+api_source_name STRING,    
 source_system STRING NOT NULL,
 connection_id INT64 NOT NULL OPTIONS(description="Key from ingestion_connection_info table."), 
 connection_name STRING NOT NULL,
@@ -19,16 +20,16 @@ project_id STRING NOT NULL,
 dataset STRING NOT NULL, 
 table_name STRING NOT NULL,
 file_format STRING, 
+header STRING,
+delimiter STRING,
 quote_characters STRING,
-api_source_name STRING, 
-partitioned_by STRING,
 escape_characters STRING,
+accepted_encoding STRING,
 is_parquet  BOOL,
-is_external BOOL NOT NULL,
+to_parquet BOOL NOT NULL,
 bucket STRING NOT NULL,
 bucket_destination STRING NOT NULL,
 archive_destination STRING NOT NULL,
-accepted_encoding STRING,
 created_by STRING NOT NULL, 
 created_date DATETIME NOT NULL,
 modified_by STRING NOT NULL, 
@@ -45,7 +46,8 @@ primary_key_column, --ID
 incremental_date_column, --NULL
 load_type,  --INCR
 extra_parameters, --NULL
-delimiter,  --NULL
+partitioned_by, --NULL
+api_source_name, --COINCAP
 source_system, --COINCAP
 connection_id,
 connection_name, --COINCAP_ASSET
@@ -53,16 +55,16 @@ project_id, --COINCAP-DATA-HUB
 dataset,    --EXTERNAL_COINCAP_DATA
 table_name, --EXTERNAL_COINCAP_ASSETS
 file_format, --JSON
+header, --'infer'
+delimiter,  --NULL
 quote_characters, --NULL
-api_source_name, --COINCAP
-partitioned_by, --NULL
 escape_characters, --NULL
+accepted_encoding, --gzip
 is_parquet, --FALSE
-is_external, --TRUE
+to_parquet, --TRUE
 bucket, --dev-coincap-data
 bucket_destination, --input/
 archive_destination, --archive/coincap_assets/ 
-accepted_encoding, --gzip
 created_by, --ADMIN
 created_date, --CURRENT_DATETIME
 modified_by, --ADMIN

@@ -3,26 +3,14 @@ import json
 import pandas as pd
 
 
-def dict_to_csv(my_dict, csv_filename):
-    try:
-        # Open the CSV file for writing
-        with open(csv_filename + ".csv", "w", newline="") as csv_file:
-            writer = csv.writer(csv_file)
-
-            # Write the header (keys of the dictionary)
-            writer.writerow(my_dict.keys())
-
-            # Write the values (values of the dictionary)
-            writer.writerow(my_dict.values())
-
-        return f"{csv_filename}.csv"
-    except Exception as e:
-        return f"Error: {e}"
-
-
 def csv_to_parquet(
-    file_path: str, header: str, seperator: str, quotation: str, parquet_filename: str
-):
+    file_path: str,
+    header: str,
+    seperator: str,
+    quotation: str,
+    parquet_filename: str,
+    compression: str,
+) -> str:
     try:
         if header == None:
             header = "infer"
@@ -33,13 +21,12 @@ def csv_to_parquet(
             sep=seperator,
             quotechar=quotation,
             engine="python",
+            encoding="utf-8",
         )
 
-        df = pd.DataFrame(csv)
-
         # Write the DataFrame to Parquet
-        df.to_parquet(
-            f"{parquet_filename}.parquet", engine="pyarrow"
+        csv.to_parquet(
+            f"{parquet_filename}.parquet", engine="pyarrow", compression=compression
         )  # You can choose 'fastparquet' if preferred
 
         return f"{parquet_filename}.parquet"
@@ -47,14 +34,16 @@ def csv_to_parquet(
         return f"Error: {e}"
 
 
-def response_to_parquet(response_data, parquet_filename):
+def response_to_parquet(
+    response_data: dict, parquet_filename: str, compression: str
+) -> str:
     try:
         # Load response data to DataFrame
         df = pd.DataFrame(response_data["data"])
 
         # Write the DataFrame to Parquet
         df.to_parquet(
-            f"{parquet_filename}.parquet", engine="pyarrow"
+            f"{parquet_filename}.parquet", engine="pyarrow", compression=compression
         )  # You can choose 'fastparquet' if preferred
 
         return f"{parquet_filename}.parquet"
