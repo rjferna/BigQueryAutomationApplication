@@ -111,7 +111,7 @@ AWS SDK for python to support S3 as a data source is available. The requirements
 Boto3: <a href="https://boto3.amazonaws.com/v1/documentation/api/latest/index.html" target="_black">Boto3 - Documentation</a>
 
 
-**GCP BUCKET**
+**GCS BUCKET**
 
 TBD ...
 

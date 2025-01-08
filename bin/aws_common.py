@@ -10,24 +10,20 @@ def get_aws_s3(
     import_file: str
 ) -> str:
     try:
-        AWS_ACCESS_KEY = aws_access_key
-        AWS_SECURITY_TOKEN = aws_security_token
-        BUCKET_PATH = bucket_path
-        PREFIX_PATH = prefix_path
+        FULL_IMPORT_PATH = "{}{}".format(import_path, import_file)
 
-        FULL_FILE_NAME = import_file
-        FULL_IMPORT_PATH = import_path + "/" + FULL_FILE_NAME
-
-        # Connection Established.
+        # Initialize a client with AWS
         s3 = boto3.client(
             "s3",
-            aws_access_key_id=AWS_ACCESS_KEY,
-            aws_secret_access_key=AWS_SECURITY_TOKEN,
+            aws_access_key_id=aws_access_key,
+            aws_secret_access_key=aws_security_token
         )
 
-        # Downloading file from S3 Bucket
-        s3.download_file(BUCKET_PATH, PREFIX_PATH, FULL_IMPORT_PATH)
 
+        # Downloading file from S3 Bucket
+        s3.download_file(bucket_path, prefix_path, FULL_IMPORT_PATH)
+
+        # Close session
         s3.close()
 
         return f"{FULL_IMPORT_PATH}"

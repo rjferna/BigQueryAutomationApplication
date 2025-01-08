@@ -2,7 +2,8 @@ import os
 import sys
 import json
 import shutil
-from datetime import datetime, timedelta
+import time
+from datetime import datetime, timezone, timedelta
 
 from config import Config
 from parse_args import parse_args
@@ -13,7 +14,9 @@ from gcp_common import (
     get_column_details,
     get_workflow_action_process_id,
     set_workflow_action_process_id,
-    update_workflow_action_process_id,
+    update_workflow_action_process_id,    
+    set_workflow_audit_details,
+    update_workflow_audit_details,
     get_incremental_date,
     upload_to_bucket,
     create_external_table,
@@ -49,6 +52,9 @@ def main():
     logger.debug("args: {}".format(args))
 
     try:
+        # Initialize Execution Start Datetime (UTC)
+        execution_start_datetime_utc = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")
+
         # Makes data directory if not exists
         if os.path.exists(config_var.get("file_path")):
             if not os.listdir(config_var.get("file_path")):
@@ -129,6 +135,7 @@ def main():
             connection_name=connection_name,
             dataset=dataset,
             table_name=args.get("asset"),
+            execution_start_datetime=execution_start_datetime_utc,
             execution_status=0,
             keyfile_path=config_var.get("gcp_creds"),
         )
@@ -144,6 +151,7 @@ def main():
                 f"[Error]: Section type does not match ingestion configuration."
             )
 
+        logger.info(f"Beginning {args.get('section')} Data Ingestion")
         # Identify Data Ingestion Workflow type
         if ingestion_type == "REQUEST":
             if incremental_date_column == None:
@@ -162,7 +170,7 @@ def main():
                 )
                 ref_exists = get_table_exists(
                     project_id=project_id,
-                    dataset=f"ref_{dataset}",
+                    dataset=dataset,
                     table_name=args.get("asset"),
                     keyfile_path=config_var.get("gcp_creds"),
                 )
@@ -214,6 +222,9 @@ def main():
                 import_file="{}.{}".format(args.get("asset"), file_format),
             )
 
+        # Sleep for 3 seconds
+        time.sleep(3)
+
         # Check Response Data & Write to Parquet
         if "Error:" in response:
             logger.info(f"{response}")
@@ -232,22 +243,59 @@ def main():
                     compression=accepted_encoding,
                 )
                 logger.info(f"Writing response data to file")
-            elif ingestion_type in ("S3", "GCPB", "SFTP"):
-                if to_parquet == False:
-                    logger.info(f"File remaining as: {file_format}")
-                elif file_format == "CSV" and to_parquet == True:
-                    logger.info(f"Converting {file_format} to PARQUET.")
-                    response_file = csv_to_parquet(
-                        file_path=response,
-                        header=header,
-                        seperator=delimiter,
-                        quotation=quote_characters,
-                        parquet_filename=config_var.get("file_path")
-                        + args.get("asset"),
-                        compression=accepted_encoding,
-                    )
+            elif ingestion_type in ("S3", "GCS", "SFTP"):
+                if to_parquet == True:
+                    if file_format == "CSV": 
+                        logger.info(f"Converting {file_format} to PARQUET.")
+                        response_file = csv_to_parquet(
+                            file_path=response,
+                            header=header,
+                            seperator=delimiter,
+                            quotation=quote_characters,
+                            parquet_filename=config_var.get("file_path")
+                            + args.get("asset"),
+                            compression=accepted_encoding,
+                        )
+                    elif file_format == "TSV":
+                        logger.info(f"Converting {file_format} to PARQUET.")
+                        #response_file = tsv_to_parquet()
+                    elif file_format == "JSON":
+                        logger.info(f"Converting {file_format} to PARQUET.")
+                        #response_file = json_to_parquet()
+                    elif file_format == "AVRO":
+                        logger.info(f"Converting {file_format} to PARQUET.")
+                        #response_file = avro_to_parquet()
                     file_format = "PARQUET"
-                    logger.info(f"File Conversion Completed.")
+                    logger.info(f"File Conversion Completed.")                    
+                else:
+                    logger.info(f"File remaining as: {file_format}")                    
+
+        # Sleep for 3 seconds
+        time.sleep(3)
+
+        # Check File Conversion
+        if "Error:" in response_file:
+            logger.info(f"{response_file}")
+            update_workflow_action_process_id(
+                process_id=process_id,
+                execution_status=-1,
+                keyfile_path=config_var.get("gcp_creds"),
+            )
+            logger.info(
+                "Data Ingestion Completed with Errors." + "\n" + "Execution END."
+            )
+
+            # Upload Workflow Execution Log File to GCP Bucket
+            upload_to_bucket(
+                bucket_name=config_var.get("log_bucket"),
+                source_file_name=logfilepath,
+                destination_blob_name=logfile,
+                keyfile_path=config_var.get("gcp_creds"),
+            )
+            sys.exit(1)
+
+        # Sleep for 3 seconds
+        time.sleep(3)
 
         # Archive Existing File in GCP Bucket
         logger.info(
@@ -268,6 +316,9 @@ def main():
             logger.info(f"Error: {archive_response}")
         else:
             logger.info(f"Archive Status: {archive_response}")
+
+        # Sleep for 3 seconds
+        time.sleep(3)
 
         # Load New Data File To GCP Bucket
         logger.info(
@@ -302,9 +353,12 @@ def main():
             )
             sys.exit(1)
 
+        # Sleep for 3 seconds
+        time.sleep(3)
+
         # Create External Table
         logger.info(
-            f"Creating External Table: {project_id}.{dataset}.{args.get('asset')}"
+            f"Creating External Table: {project_id}.EXTERNAL_{dataset}.{args.get('asset')}"
         )
         create_external = create_external_table(
             project_id=project_id,
@@ -377,6 +431,9 @@ def main():
             source_to_stg_column_query = value["source_to_stg_column_query"]
             mapping_stg_to_ref_column_query = value["mapping_stg_to_ref_column_query"]
 
+        # Sleep for 3 seconds
+        time.sleep(3)
+
         # Drop & Create Staging Table
         logger.info(
             f"Creating and loading Staging Table: {project_id}.STG_{dataset}.{args.get('asset')}"
@@ -410,16 +467,20 @@ def main():
             )
             sys.exit(1)
 
+        # Sleep for 3 seconds
+        time.sleep(3)
+        
         # Check if Reference table Exists if not Create Reference table
         logger.info(
             f"Checking if Reference Table Exists: {project_id}.REF_{dataset}.{args.get('asset')}"
         )
         ref_exists = get_table_exists(
             project_id=project_id,
-            dataset=f"ref_{dataset}",
+            dataset=dataset,
             table_name=args.get("asset"),
             keyfile_path=config_var.get("gcp_creds"),
         )
+        print("Out of create ref.")
         if type(ref_exists) == str:
             logger.info(f"{ref_exists}")
             update_workflow_action_process_id(
@@ -445,6 +506,16 @@ def main():
                 primary_key_column=primary_key_column,
                 keyfile_path=config_var.get("gcp_creds"),
             )
+
+            # Set Workflow Audit Details for Ref Table
+            set_workflow_audit_details(
+                process_id=process_id, 
+                connection_name=connection_name, 
+                project_id=project_id, 
+                table_name=args.get("asset"),
+                execution_start_datetime=execution_start_datetime_utc,
+                keyfile_path=config_var.get("gcp_creds")
+                )
             logger.info(
                 f"Drop & Create Reference table: {create_ref}. Full dataload Completed."
                 + "\n"
@@ -465,6 +536,18 @@ def main():
                 primary_key_column=primary_key_column,
                 keyfile_path=config_var.get("gcp_creds"),
             )
+
+            # Set Workflow Audit Details for Ref Table
+            set_workflow_audit_details(
+                process_id=process_id, 
+                connection_name=connection_name, 
+                project_id=project_id,
+                dataset=dataset, 
+                table_name=args.get("asset"),
+                execution_start_datetime=execution_start_datetime_utc,
+                keyfile_path=config_var.get("gcp_creds")
+                )
+                        
             logger.info(
                 f"Drop & Create Reference table: {create_ref}. Full dataload Completed."
                 + "\n"
@@ -474,6 +557,18 @@ def main():
             logger.info(
                 f"Reference Table Flag: {ref_exists} Table exists. Data load type: {load_type}. Begin Incremental Data Load."
             )
+
+            # Set Workflow Audit Details for Ref Table
+            set_workflow_audit_details(
+                process_id=process_id, 
+                connection_name=connection_name, 
+                project_id=project_id,
+                dataset=dataset, 
+                table_name=args.get("asset"),
+                execution_start_datetime=execution_start_datetime_utc,
+                keyfile_path=config_var.get("gcp_creds")
+                )
+
             create_ref = create_and_load_reference_table(
                 flag=1,
                 project_id=project_id,
@@ -485,11 +580,15 @@ def main():
                 primary_key_column=primary_key_column,
                 keyfile_path=config_var.get("gcp_creds"),
             )
+
             logger.info(
                 f"Incremental Data Load to Reference table: {create_ref} Completed."
                 + "\n"
                 + "Execution END."
             )
+
+        # Sleep for 3 seconds
+        time.sleep(3)
 
         if "Error:" in create_ref:
             logger.info(f"{create_ref}")
@@ -502,11 +601,22 @@ def main():
                 "Data Ingestion Completed with Errors." + "\n" + "Execution END."
             )
 
+        # 
         update_workflow_action_process_id(
             process_id=process_id,
             execution_status=1,
             keyfile_path=config_var.get("gcp_creds"),
         )
+
+        #
+        update_workflow_audit_details(
+            process_id=process_id, 
+            project_id=project_id, 
+            dataset=dataset, 
+            table_name=args.get("asset"),
+            keyfile_path=config_var.get("gcp_creds")
+            )
+
 
         # Upload Workflow Execution Log File to GCP Bucket
         upload_to_bucket(

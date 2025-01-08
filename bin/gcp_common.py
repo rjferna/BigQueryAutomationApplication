@@ -130,9 +130,7 @@ def get_incremental_date(
             credentials=credentials, project=credentials.project_id
         )
 
-        query = f"""
-                SELECT MAX({date.lower()}) as MX_DATE FROM `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}`
-                """
+        query = f""" CALL `metadata_utilities`.sp_getIncrementalDate('{project_id}','{dataset}', '{table_name}', '{date}');  """
 
         # Execute the query
         query_job = client.query(query)
@@ -167,9 +165,8 @@ def get_table_exists(
             credentials=credentials, project=credentials.project_id
         )
 
-        query = f"""
-                SELECT COUNT(1) as flag FROM `{project_id.lower()}.{dataset.lower()}.__TABLES_SUMMARY__` WHERE table_id = '{table_name.lower()}';
-                """
+        query = f""" CALL `metadata_utilities`.sp_getTableExists('{project_id}', '{dataset}', '{table_name}');  """
+
         query_job = client.query(query)
 
         # Fetch the results
@@ -204,41 +201,7 @@ def get_connection_details(
             credentials=credentials, project=credentials.project_id
         )
 
-        query = f"""
-            SELECT DISTINCT 
-            a.connection_name, 
-            a.connection_url, 
-            a.user_name, 
-            a.password_encrypted, 
-            a.security_token, 
-            b.ingestion_type,
-            b.source_schema_table_name,
-            b.dataset,
-            b.primary_key_column,
-            b.incremental_date_column,
-            b.load_type,
-            b.extra_parameters,
-            b.project_id,
-            b.dataset,
-            b.file_format,
-            b.header,
-            b.delimiter,            
-            b.quote_characters,
-            b.escape_characters,
-            b.accepted_encoding,
-            b.is_parquet,
-            b.to_parquet,
-            b.bucket,
-            b.bucket_destination,
-            b.archive_destination
-            FROM `dw-metadata-utilities.metadata_utilities.ingestion_connection_info` as a
-            INNER JOIN `dw-metadata-utilities.metadata_utilities.ingestion_config` as b on a.connection_name = b.connection_name
-            WHERE 
-                a.connection_name = '{connection_name}'
-            AND
-                b.table_name = '{table_name}'
-            ; 
-            """
+        query = f""" CALL `metadata_utilities`.sp_getConnectionDetails('{connection_name}', '{table_name}'); """
 
         # Execute the query
         query_job = client.query(query)
@@ -269,23 +232,7 @@ def get_column_details(
             credentials=credentials, project=credentials.project_id
         )
 
-        query = f"""
-            SELECT 
-            table_name,
-            STRING_AGG(CONCAT(lower(mapping_column), ' ', (datatype)), ', ') AS stg_ref_create_table_column_details,  
-            STRING_AGG(CONCAT('SAFE_CAST(' ,lower(column_name),' AS ',(datatype),') AS ',lower(mapping_column)), ',') AS source_to_stg_conversion_column_details,
-            STRING_AGG(lower(column_name)) AS source_to_stg_column_query,
-            STRING_AGG(lower(mapping_column)) AS mapping_stg_to_ref_column_query
-            FROM `dw-metadata-utilities.metadata_utilities.ingestion_column_details`
-            WHERE 
-                project_id = '{project_id}'
-            AND
-                dataset = '{dataset}'
-            AND
-                table_name = '{table_name}'
-            GROUP BY table_name
-            ; 
-            """
+        query = f""" CALL `metadata_utilities`.sp_getColumnDetails('{project_id}', '{dataset}', '{table_name}');  """
 
         # Execute the query
         query_job = client.query(query)
@@ -312,9 +259,7 @@ def get_workflow_action_process_id(keyfile_path: str) -> str:
             credentials=credentials, project=credentials.project_id
         )
 
-        query = """
-                SELECT MAX(process_id) + 1 as process_id FROM `dw-metadata-utilities.metadata_utilities.workflow_action_history`;
-                """
+        query = """ CALL `metadata_utilities`.sp_getWorkflowActionProcessID(); """
         # Execute the query
         query_job = client.query(query)
 
@@ -338,6 +283,7 @@ def set_workflow_action_process_id(
     connection_name: str,
     dataset: str,
     table_name: str,
+    execution_start_datetime: str,
     execution_status: str,
     keyfile_path: str,
 ) -> str:
@@ -350,11 +296,7 @@ def set_workflow_action_process_id(
             credentials=credentials, project=credentials.project_id
         )
 
-        query = f"""
-            INSERT INTO `dw-metadata-utilities.metadata_utilities.workflow_action_history`
-            (process_id,connection_name,dataset,table_name,executed_by,execution_start_datetime,execution_end_datetime,execution_status) 
-            VALUES({process_id},'{connection_name}','{dataset}','{table_name}', 'ADMIN',CURRENT_DATETIME,NULL,{execution_status});
-            """
+        query = f""" CALL `metadata_utilities`.sp_setWorkflowActionProcessID('{process_id}','{connection_name}','{dataset}','{table_name}', '{execution_start_datetime}', '{execution_status}'); """
 
         # Execute the query
         query_job = client.query(query)
@@ -378,11 +320,7 @@ def update_workflow_action_process_id(
             credentials=credentials, project=credentials.project_id
         )
 
-        query = f"""
-            UPDATE `dw-metadata-utilities.metadata_utilities.workflow_action_history`
-            SET execution_end_datetime = CURRENT_DATETIME, execution_status = {execution_status}
-            WHERE process_id = {process_id}
-            """
+        query = f""" CALL `metadata_utilities`.sp_updateWorkflowActionProcessID('{process_id}','{execution_status}'); """
 
         query_job = client.query(query)
 
@@ -392,6 +330,63 @@ def update_workflow_action_process_id(
     except Exception as e:
         return f"Error: {e}"
 
+
+def set_workflow_audit_details(
+    process_id: str,
+    connection_name: str,
+    project_id: str,
+    dataset: str,
+    table_name: str,
+    execution_start_datetime: str,
+    keyfile_path: str
+) -> str:
+    try:
+        keyfile = keyfile_path
+
+        # Create credentials & Initialize Client
+        credentials = service_account.Credentials.from_service_account_file(keyfile)
+        client = bigquery.Client(
+            credentials=credentials, project=credentials.project_id
+        )
+
+        query = f""" CALL `metadata_utilities`.sp_setWorkflowAuditDetails('{process_id}', '{project_id}','{connection_name}', '{dataset}','{table_name}', '{execution_start_datetime}''); """
+
+        # Execute the query
+        query_job = client.query(query)
+
+        query_job.result()
+
+        return "SUCCESS"
+    except Exception as e:
+        return f"Error: {e}"
+
+
+def update_workflow_audit_details(
+    process_id: str,
+    project_id: str,
+    dataset: str,
+    table_name: str,
+    keyfile_path: str
+) -> str:
+    try:
+        keyfile = keyfile_path
+
+        # Create credentials & Initialize Client
+        credentials = service_account.Credentials.from_service_account_file(keyfile)
+        client = bigquery.Client(
+            credentials=credentials, project=credentials.project_id
+        )
+
+        query = f""" CALL `metadata_utilities`.sp_updateWorkflowAuditDetails('{process_id}', '{project_id}', '{dataset}','{table_name}'); """
+
+        # Execute the query
+        query_job = client.query(query)
+
+        query_job.result()
+
+        return "SUCCESS"
+    except Exception as e:
+        return f"Error: {e}"
 
 def create_external_table(
     project_id: str,
@@ -410,13 +405,7 @@ def create_external_table(
             credentials=credentials, project=credentials.project_id
         )
 
-        query = f"""
-                CREATE OR REPLACE EXTERNAL TABLE `{project_id.lower()}.external_{dataset.lower()}.{table_name.lower()}`
-                OPTIONS (
-                format = '{file_format}',
-                uris = ['gs://{bucket_destination_name}']
-                );
-                """
+        query = f""" CALL `metadata_utilities`.sp_CreateExternalTable('{project_id}', 'EXTERNAL_{dataset}', '{table_name}', '{file_format}', '{bucket_destination_name}'); """
 
         query_job = client.query(query)
 
@@ -444,15 +433,7 @@ def create_and_load_staging_table(
             credentials=credentials, project=credentials.project_id
         )
 
-        query = f"""
-                DROP TABLE IF EXISTS `{project_id.lower()}.stg_{dataset.lower()}.{table_name.lower()}`;
-                CREATE TABLE IF NOT EXISTS `{project_id.lower()}.stg_{dataset.lower()}.{table_name.lower()}` (
-                {stg_and_ref_create_table}, IS_DELETED BOOL, IS_HARD_DELETE BOOL, DW_CREATE_DATETIME DATETIME, DW_LOAD_DATETIME DATETIME
-                );
-
-                INSERT INTO `{project_id.lower()}.stg_{dataset.lower()}.{table_name.lower()}`
-                SELECT {source_to_stg_conversion}, FALSE AS IS_DELETED, FALSE AS IS_HARD_DELETE, CURRENT_DATETIME AS DW_CREATE_DATETIME, CURRENT_DATETIME AS DW_LOAD_DATETIME FROM `{project_id.lower()}.external_{dataset.lower()}.{table_name.lower()}`;                
-                """
+        query = f""" CALL `metadata_utilities`.sp_CreateAndLoadStagingTable('{project_id}', '{dataset}', '{table_name}', '{stg_and_ref_create_table}', '{source_to_stg_conversion}'); """
 
         query_job = client.query(query)
 
@@ -509,38 +490,14 @@ def create_and_load_reference_table(
         # flag: 0 table does not exists, 1 table exists
 
         if flag == 0:
-            query = f"""
-                CREATE TABLE IF NOT EXISTS `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}` (
-                {stg_and_ref_create_table}, IS_DELETED BOOL, IS_HARD_DELETE BOOL, DW_CREATE_DATETIME DATETIME, DW_LOAD_DATETIME DATETIME
-                );
-
-                INSERT INTO `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}`
-                SELECT {mapping_stg_to_ref_query}, FALSE AS IS_DELETED, FALSE AS IS_HARD_DELETE, CURRENT_DATETIME AS DW_CREATE_DATETIME, CURRENT_DATETIME AS DW_LOAD_DATETIME FROM `{project_id.lower()}.stg_{dataset.lower()}.{table_name.lower()}`;                
-                """
+            query = f""" CALL `metadata_utilities`.sp_CreateAndLoadReferenceTable('{project_id}', '{dataset}', '{table_name}', '{stg_and_ref_create_table}', '{mapping_stg_to_ref_query}'); """
         elif flag == 1 and load_type == "FULL":
-            query = f"""
-                DROP TABLE IF EXISTS `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}`;
-                CREATE TABLE IF NOT EXISTS `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}` (
-                {stg_and_ref_create_table}, IS_DELETED BOOL, IS_HARD_DELETE BOOL, DW_CREATE_DATETIME DATETIME, DW_LOAD_DATETIME DATETIME
-                );
-
-                INSERT INTO `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}`
-                SELECT {mapping_stg_to_ref_query}, FALSE AS IS_DELETED, FALSE AS IS_HARD_DELETE, CURRENT_DATETIME AS DW_CREATE_DATETIME, CURRENT_DATETIME AS DW_LOAD_DATETIME FROM `{project_id.lower()}.stg_{dataset.lower()}.{table_name.lower()}`;                
-                """
+            query = f""" CALL `metadata_utilities`.sp_CreateAndLoadReferenceTable('{project_id}', '{dataset}', '{table_name}', '{stg_and_ref_create_table}', '{mapping_stg_to_ref_query}'); """
         elif flag == 1 and load_type == "INCR":
 
             dict_statements = set_column_alias(columns=mapping_stg_to_ref_query)
 
-            query = f"""
-                MERGE `{project_id.lower()}.ref_{dataset.lower()}.{table_name.lower()}` as T
-                USING `{project_id.lower()}.stg_{dataset.lower()}.{table_name.lower()}` as S
-                ON T.{primary_key_column.lower()} = S.{primary_key_column.lower()}
-                WHEN MATCHED THEN
-                    UPDATE SET {dict_statements['cols']}
-                WHEN NOT MATCHED THEN
-                INSERT ({mapping_stg_to_ref_query},  IS_DELETED, IS_HARD_DELETE, DW_CREATE_DATETIME, DW_LOAD_DATETIME)
-                VALUES ({dict_statements['S']}, FALSE, FALSE, CURRENT_DATETIME, CURRENT_DATETIME);                
-                """
+            query = f""" CALL `metadata_utilities`.sp_IncrementalLoadReferenceTable('{project_id}', '{dataset}', '{table_name}', '{primary_key_column}', '{dict_statements['cols']}', '{dict_statements['S']}', '{mapping_stg_to_ref_query}'); """
 
         query_job = client.query(query)
 
