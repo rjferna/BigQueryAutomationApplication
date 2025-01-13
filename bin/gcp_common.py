@@ -130,7 +130,7 @@ def get_incremental_date(
             credentials=credentials, project=credentials.project_id
         )
 
-        query = f""" CALL `metadata_utilities`.sp_getIncrementalDate('{project_id}','{dataset}', '{table_name}', '{date}');  """
+        query = f""" CALL `metadata_utilities`.sp_getIncrementalDate('{project_id}', '{dataset}', '{table_name}', '{date}');  """
 
         # Execute the query
         query_job = client.query(query)
@@ -349,7 +349,7 @@ def set_workflow_audit_details(
             credentials=credentials, project=credentials.project_id
         )
 
-        query = f""" CALL `metadata_utilities`.sp_setWorkflowAuditDetails('{process_id}', '{project_id}','{connection_name}', '{dataset}','{table_name}', '{execution_start_datetime}''); """
+        query = f""" CALL `metadata_utilities`.sp_setWorkflowAuditDetails('{process_id}', '{project_id}','{connection_name}', '{dataset}','{table_name}', '{execution_start_datetime}'); """
 
         # Execute the query
         query_job = client.query(query)

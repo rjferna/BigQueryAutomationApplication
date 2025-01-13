@@ -166,7 +166,7 @@ def main():
             elif incremental_date_column is not None:
                 # Check if Reference table Exists, if not set default incremental start date
                 logger.info(
-                    f"Checking if Reference Table Exists: {project_id}.ref_{dataset}.{args.get('asset')}"
+                    f"Checking if Reference Table Exists: {project_id}.REF_{dataset}.{args.get('asset')}"
                 )
                 ref_exists = get_table_exists(
                     project_id=project_id,
@@ -480,7 +480,7 @@ def main():
             table_name=args.get("asset"),
             keyfile_path=config_var.get("gcp_creds"),
         )
-        print("Out of create ref.")
+
         if type(ref_exists) == str:
             logger.info(f"{ref_exists}")
             update_workflow_action_process_id(
@@ -525,17 +525,6 @@ def main():
             logger.info(
                 f"Reference Table Flag: {ref_exists} Table exists. Data load type: {load_type}. Drop & Creating table and full refresh."
             )
-            create_ref = create_and_load_reference_table(
-                flag=1,
-                project_id=project_id,
-                dataset=dataset,
-                table_name=args.get("asset"),
-                load_type=load_type,
-                stg_and_ref_create_table=stg_and_ref_create_table,
-                mapping_stg_to_ref_query=mapping_stg_to_ref_column_query,
-                primary_key_column=primary_key_column,
-                keyfile_path=config_var.get("gcp_creds"),
-            )
 
             # Set Workflow Audit Details for Ref Table
             set_workflow_audit_details(
@@ -547,6 +536,18 @@ def main():
                 execution_start_datetime=execution_start_datetime_utc,
                 keyfile_path=config_var.get("gcp_creds")
                 )
+            
+            create_ref = create_and_load_reference_table(
+                flag=1,
+                project_id=project_id,
+                dataset=dataset,
+                table_name=args.get("asset"),
+                load_type=load_type,
+                stg_and_ref_create_table=stg_and_ref_create_table,
+                mapping_stg_to_ref_query=mapping_stg_to_ref_column_query,
+                primary_key_column=primary_key_column,
+                keyfile_path=config_var.get("gcp_creds"),
+            )
                         
             logger.info(
                 f"Drop & Create Reference table: {create_ref}. Full dataload Completed."

@@ -12,19 +12,14 @@ table_name STRING NOT NULL,
 execution_start_datetime DATETIME,
 execution_end_datetime DATETIME,
 duration INT64,
-total_rows_before INT64,
-total_rows_after INT64,
-row_delta FLOAT64,
-total_partitions_before INT64,
-total_partitions_after INT64,
-total_logical_bytes_before INT64,
-total_logical_bytes_after INT64,
-logical_bytes_delta FLOAT64,
-total_physical_bytes_before INT64,
-total_physical_bytes_after INT64,
-physical_bytes_delta FLOAT64,
+record_cnt_before INT64,
+record_cnt_after INT64,
+record_cnt_delta FLOAT64,
+record_cnt_avg FLOAT64,
+record_cnt_variance FLOAT64,
+record_cnt_std_deviation FLOAT64,
 FOREIGN KEY (process_id) REFERENCES `dw-metadata-utilities.metadata_utilities.workflow_action_history`(process_id) NOT ENFORCED
-);
+);  
 
 
 INSERT INTO `dw-metadata-utilities.metadata_utilities.workflow_audit_details` 

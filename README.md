@@ -122,6 +122,14 @@ TBD ...
 TBD ...
 
 
+## File Formats: 
+
+* CSV
+* JSON (TBD)
+* DAT (TBD)
+* XLS (TBD)
+* XLSX (TBD)
+
 
 ### Parser details
 
@@ -153,7 +161,7 @@ TBD ...
 
 * **CRYPTO BITCOIN_HISTORY W/ LOAD TYPE OVERRIDE:** 
 ```
-python3 controller.py -s REQUEST -cn COINCAP_BITCOIN_HISTORY -a BITCOIN_HISTORY -lt FULL -l info
+python3 controller.py -s REQUEST -cn COINCAP_BITCOIN_HISTORY -a BITCOIN_HISTORY -lt FULL -l info --print_log
 ```
 
 
