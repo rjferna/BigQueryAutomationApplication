@@ -1,5 +1,6 @@
 from google.cloud import storage, bigquery
 from google.oauth2 import service_account
+from google.oauth2.service_account import Credentials
 from datetime import datetime, timedelta
 
 
@@ -30,6 +31,34 @@ def list_files_in_bucket(
 
     return files
 
+
+def get_gcp_storage(
+    bucket_name: str,
+    prefix_path: str,
+    import_path: str,
+    import_file: str,
+    keyfile: dict
+) -> str:
+    try:
+        FULL_IMPORT_PATH = "{}{}".format(import_path, import_file)
+        
+        credentials = Credentials.from_service_account_info(keyfile)
+        
+        # Initialize a client with the service account keyfile
+        storage_client = storage.Client(credentials=credentials)
+        #storage_client = storage.Client.from_service_account_json(keyfile)
+        
+        # Get the bucket
+        bucket = storage_client.get_bucket(bucket_name)
+        
+        # Get the file
+        file = bucket.blob(prefix_path)
+
+        file.download_to_filename(FULL_IMPORT_PATH)
+
+        return f"{FULL_IMPORT_PATH}"
+    except Exception as e:
+        return f"Error: {e}"
 
 def upload_to_bucket(
     bucket_name: str,

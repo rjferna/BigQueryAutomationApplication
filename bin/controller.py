@@ -12,6 +12,7 @@ from aws_common import get_aws_s3
 from gcp_common import (
     get_connection_details,
     get_column_details,
+    get_gcp_storage,
     get_workflow_action_process_id,
     set_workflow_action_process_id,
     update_workflow_action_process_id,    
@@ -141,10 +142,6 @@ def main():
         )
         logger.info(f"Workflow Action Result: {workflow_result}")
 
-        # Decrypt Credentials
-        logger.info("Obtaining Connection Credentials")
-        pc = Prpcrypt(security_token["access"])
-
         # Confirm Section
         if ingestion_type != args.get("section"):
             logger.info(
@@ -154,6 +151,10 @@ def main():
         logger.info(f"Beginning {args.get('section')} Data Ingestion")
         # Identify Data Ingestion Workflow type
         if ingestion_type == "REQUEST":
+            # Decrypt Credentials
+            logger.info("Obtaining Connection Credentials")
+            pc = Prpcrypt(security_token["access"])
+            
             if incremental_date_column == None:
                 response = get_request(
                     key=pc.decrypt(password_encrypted),
@@ -213,6 +214,10 @@ def main():
                         interval=extra_parameters,
                     )
         elif ingestion_type == "S3":
+            # Decrypt Credentials
+            logger.info("Obtaining Connection Credentials")
+            pc = Prpcrypt(security_token["access"])
+            
             response = get_aws_s3(
                 aws_access_key=pc.decrypt(password_encrypted),
                 aws_security_token=security_token["token"],
@@ -221,6 +226,27 @@ def main():
                 import_path=config_var.get("file_path"),
                 import_file="{}.{}".format(args.get("asset"), file_format),
             )
+        elif ingestion_type == "GCS":
+            # Decrypt Credentials
+            logger.info("Obtaining Connection Credentials")
+            pc = Prpcrypt(security_token["token"])
+            
+            decrypted_credential= json.loads(pc.decrypt(password_encrypted))
+
+            pc = Prpcrypt(security_token["access"])
+
+            gcs_creds = {}
+            for name, val in decrypted_credential.items():
+                gcs_creds.update({name: pc.decrypt(val)})
+            
+            response = get_gcp_storage(
+                bucket_name=connection_url,
+                prefix_path=source_schema_table_name,
+                import_path=config_var.get("file_path"),
+                import_file="{}.{}".format(args.get("asset"), file_format),
+                keyfile=gcs_creds
+                )
+
 
         # Sleep for 3 seconds
         time.sleep(3)
@@ -602,14 +628,14 @@ def main():
                 "Data Ingestion Completed with Errors." + "\n" + "Execution END."
             )
 
-        # 
+        # Update Workflow Action History Record
         update_workflow_action_process_id(
             process_id=process_id,
             execution_status=1,
             keyfile_path=config_var.get("gcp_creds"),
         )
 
-        #
+        # Update Workflow Audit Details to Include Execution Stats
         update_workflow_audit_details(
             process_id=process_id, 
             project_id=project_id, 

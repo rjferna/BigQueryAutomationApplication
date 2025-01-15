@@ -3,6 +3,8 @@ bin/config2.ini
 bin/playground.ipynb
 bin/playground.py
 bin/gcp_query.py
+bin/sftp_common.py
+bin/sftp_common2.py
 
 archive/
 data/

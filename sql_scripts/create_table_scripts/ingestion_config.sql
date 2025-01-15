@@ -101,7 +101,7 @@ api_source_name, --'boto3'
 partitioned_by, --NULL
 escape_characters, --NULL
 is_parquet, --FALSE
-is_external, --FALSE
+to_parquet, --FALSE
 bucket, --dev-coincap-data
 bucket_destination, --input/
 archive_destination, --archive/coincap_assets/ 
@@ -136,6 +136,72 @@ FALSE,
 'input/moview_review/',
 'archive/movie_review',
 NULL,
+'ADMIN',
+CURRENT_DATETIME,
+'ADMIN',
+CURRENT_DATETIME);
+
+
+/* GCS Example */
+INSERT INTO `dw-metadata-utilities.metadata_utilities.ingestion_config`
+(
+ingestion_config_id, --50000 
+ingestion_type, --GCS
+source_schema_table_name, --PREFIX_PATH_FILE_NAME
+primary_key_column, --NULL
+incremental_date_column, --NULL
+load_type,  --FULL
+extra_parameters, --NULL
+partitioned_by, --NULL
+api_source_name, --'Google API
+source_system, --GCS
+connection_id,
+connection_name, --GCS_COINCAP
+project_id, --COINCAP-DATA-HUB
+dataset,    --COINCAP_DATA
+table_name, --MOVIE_REVIEW
+file_format, --'csv'
+header, --''
+delimiter,  --','
+quote_characters, --'"'
+escape_characters, --NULL
+accepted_encoding, --gzip
+is_parquet, --FALSE
+to_parquet, --FALSE
+bucket, --dev-coincap-data
+bucket_destination, --input/
+archive_destination, --archive/coincap_assets/ 
+created_by, --ADMIN
+created_date, --CURRENT_DATETIME
+modified_by, --ADMIN
+modified_date--CURRENT_DATETIME
+) VALUES
+((SELECT IFNULL(MAX(ingestion_config_id), 0) + 1 FROM `dw-metadata-utilities.metadata_utilities.ingestion_config`),
+'GCS',
+'input/adhoc/Nigerian_Road_Traffic_Crashes_2020_2024.csv',
+NULL,
+NULL,
+'FULL',
+NULL,
+NULL,
+'Google API',
+'GCS',
+7,
+'GCS_COINCAP',
+'COINCAP-DATA-HUB',
+'COINCAP_DATA',
+'NIGERIAN_ROAD_TRAFFIC',
+'CSV',
+'',
+',',
+'"',
+NULL,
+'gzip',
+FALSE, 
+TRUE, 
+'dev-coincap-data', 
+'input/nigerian_road_traffic/',
+'archive/nigerian_road_traffic/',
 'ADMIN',
 CURRENT_DATETIME,
 'ADMIN',
